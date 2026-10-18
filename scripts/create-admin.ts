@@ -11,9 +11,16 @@ try {
       name: process.env.ADMIN_NAME ?? 'Store admin',
       passwordHash: await hash(password),
       role: 'ADMIN',
+      username: process.env.ADMIN_USERNAME ?? undefined,
+      requiresPasswordChange: false,
       emailVerifiedAt: new Date(),
     },
-    update: { role: 'ADMIN', passwordHash: await hash(password) },
+    update: {
+      role: 'ADMIN',
+      passwordHash: await hash(password),
+      requiresPasswordChange: false,
+      ...(process.env.ADMIN_USERNAME ? { username: process.env.ADMIN_USERNAME } : {}),
+    },
   });
   console.log('Administrator provisioned. Sign in and enroll MFA before production operations.');
 } finally {

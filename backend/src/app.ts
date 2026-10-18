@@ -1,3 +1,4 @@
+import { refreshStoreSettings } from './services/store-settings.js';
 import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -66,6 +67,10 @@ app.use(
   sessionMiddleware,
   csrf,
 );
+app.use('/api/v1', async (_req, _res, next) => {
+  await refreshStoreSettings();
+  next();
+});
 app.get('/api/v1/config', (_req, res) => res.json({ data: publicStoreConfig() }));
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/account', account);

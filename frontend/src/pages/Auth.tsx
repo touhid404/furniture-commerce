@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, LayoutGrid } from 'lucide-react';
 import { useStore } from '../app/Store.js';
-import { send } from '../lib/api.js';
+import { api, send } from '../lib/api.js';
 import { formValues, useAction } from '../lib/hooks.js';
 import { ProductArt } from '../components/ProductArt.js';
+import type { User } from '../lib/types.js';
 import { Field, Notice } from '../components/UI.js';
 export function SignIn() {
   const { config, refresh } = useStore(),
@@ -16,8 +17,12 @@ export function SignIn() {
     [search] = useSearchParams();
   const complete = async (demo = false, values?: Record<string, string>) => {
     await action.run(async () => {
+      let signedIn: { user: User };
       try {
-        await send(demo ? '/auth/demo' : create ? '/auth/register' : '/auth/login', values ?? {});
+        signedIn = await send<{ user: User }>(
+          demo ? '/auth/demo' : create ? '/auth/register' : '/auth/login',
+          values ?? {},
+        );
       } catch (e) {
         if (e instanceof Error && e.message.includes('authenticator')) setMfa(true);
         throw e;
@@ -25,7 +30,11 @@ export function SignIn() {
       await refresh();
       const next = search.get('next');
       navigate(
-        demo ? '/admin' : next?.startsWith('/') && !next.startsWith('//') ? next : '/account',
+        signedIn.user.role === 'ADMIN'
+          ? '/admin'
+          : next?.startsWith('/') && !next.startsWith('//')
+            ? next
+            : '/account',
       );
     });
   };
@@ -71,8 +80,14 @@ export function SignIn() {
               />
             </Field>
           )}
-          <Field label="Email">
-            <input type="email" name="email" placeholder="Email" autoComplete="email" required />
+          <Field label={create ? 'Email' : 'Email or username'}>
+            <input
+              type={create ? 'email' : 'text'}
+              name="email"
+              placeholder={create ? 'Email' : 'Email or username'}
+              autoComplete="username"
+              required
+            />
           </Field>
           <Field label="Password">
             <div className="password-input">
@@ -81,7 +96,7 @@ export function SignIn() {
                 name="password"
                 placeholder="Password"
                 autoComplete={create ? 'new-password' : 'current-password'}
-                minLength={10}
+                minLength={create ? 10 : 1}
                 maxLength={128}
                 required
               />
@@ -118,7 +133,7 @@ export function SignIn() {
             Forgot your password?
           </Link>
         )}
-        {config.demo && (
+        {config.capabilities.demoSignIn && (
           <>
             <div className="divider">
               <span>or</span>
@@ -156,7 +171,7 @@ export function SignIn() {
 }
 export function AccessPage() {
   const location = useLocation(),
-    { notify, refresh } = useStore(),
+    { notify, refresh, user } = useStore(),
     action = useAction(),
     navigate = useNavigate(),
     [done, setDone] = useState('');
@@ -180,7 +195,11 @@ export function AccessPage() {
       <h1>{title}</h1>
       <p className="muted">
         {kind === 'order-access'
-          ? 'Enter the email and order number from your confirmation. We’ll send a private access link.'
+          ? token
+            ? 'Open your order using the private access link.'
+            : user
+              ? 'Enter the order number from your confirmation to see its latest status.'
+              : 'Enter your order number, then sign in to the account used at checkout.'
           : 'Your personal details stay private and secure.'}
       </p>
       <form
@@ -188,6 +207,19 @@ export function AccessPage() {
           e.preventDefault();
           const values = formValues(e.currentTarget);
           action.run(async () => {
+            if (kind === 'order-access' && !token) {
+              if (!user) {
+                navigate(
+                  `/sign-in?next=${encodeURIComponent('/order-access?number=' + encodeURIComponent(values.number))}`,
+                );
+                return;
+              }
+              const result = await api<{ orderId: string }>(
+                `/orders/lookup?number=${encodeURIComponent(values.number)}`,
+              );
+              navigate(`/orders/${result.orderId}`);
+              return;
+            }
             const result = await send<{ message?: string; orderId?: string }>(
               kind === 'order-access'
                 ? token
@@ -206,14 +238,21 @@ export function AccessPage() {
           });
         }}
       >
-        {(kind === 'forgot-password' || (kind === 'order-access' && !token)) && (
+        {kind === 'forgot-password' && (
           <Field label="Email address">
             <input name="email" type="email" autoComplete="email" required />
           </Field>
         )}
         {kind === 'order-access' && !token && (
           <Field label="Order number">
-            <input name="number" required />
+            <input
+              name="number"
+              placeholder="e.g. KV-…"
+              defaultValue={new URLSearchParams(location.search).get('number') ?? ''}
+              autoComplete="off"
+              maxLength={60}
+              required
+            />
           </Field>
         )}
         {kind === 'reset-password' && (
@@ -235,7 +274,11 @@ export function AccessPage() {
               ? 'Verify email'
               : token && kind === 'order-access'
                 ? 'Open my order'
-                : 'Continue'}
+                : kind === 'order-access'
+                  ? user
+                    ? 'Track order'
+                    : 'Sign in to track order'
+                  : 'Continue'}
             <ArrowRight size={16} />
           </button>
         )}

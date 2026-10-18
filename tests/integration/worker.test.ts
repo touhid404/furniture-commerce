@@ -5,6 +5,8 @@ import { once } from 'node:events';
 import { spawn } from 'node:child_process';
 import { prisma } from '../../backend/src/db/client.js';
 import { storeConfig } from '../../backend/src/config.js';
+import { assertFixtureEnvironment } from '../fixtures/environment.js';
+assertFixtureEnvironment();
 if (process.env.NEON_BRANCH === 'production' || storeConfig.mode !== 'demo')
   throw new Error('Worker acceptance requires an isolated demo branch.');
 const messages: string[] = [];

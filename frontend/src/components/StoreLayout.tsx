@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -12,11 +12,10 @@ import {
   X,
 } from 'lucide-react';
 import { useStore } from '../app/Store.js';
-import { api, send } from '../lib/api.js';
 import { useAction } from '../lib/hooks.js';
-import type { Cart } from '../lib/types.js';
+import { BagTotals } from './Promotion.js';
 import { ProductArt } from './ProductArt.js';
-import { Empty, Notice } from './UI.js';
+import { Empty, Loading, Notice } from './UI.js';
 export function Logo() {
   const { config } = useStore();
   return (
@@ -33,16 +32,10 @@ export function Logo() {
   );
 }
 export function CartLines() {
-  const { cart, updateCart, money } = useStore(),
+  const { cart, config, quantity: updateQuantity, money } = useStore(),
     action = useAction();
   const change = (id: string, quantity: number) =>
-    action.run(async () =>
-      updateCart(
-        quantity
-          ? await send<Cart>(`/cart/items/${id}`, { quantity }, 'PATCH')
-          : await api<Cart>(`/cart/items/${id}`, { method: 'DELETE' }),
-      ),
-    );
+    action.run(async () => updateQuantity(id, quantity));
   return (
     <>
       <Notice>{action.error}</Notice>
@@ -72,7 +65,10 @@ export function CartLines() {
               <span>{i.quantity}</span>
               <button
                 aria-label={`Increase ${i.name}`}
-                disabled={action.busy || i.quantity >= Math.min(10, i.available)}
+                disabled={
+                  action.busy ||
+                  i.quantity >= Math.min(config.checkout.maxQuantityPerSku, i.available)
+                }
                 onClick={() => change(i.id, i.quantity + 1)}
               >
                 <Plus size={13} />
@@ -94,7 +90,7 @@ export function CartLines() {
   );
 }
 export function StoreLayout() {
-  const { config, user, cart, toast, dismiss, money, updateCart, locale, setLocale } = useStore(),
+  const { config, user, cart, setMarket, locale, setLocale } = useStore(),
     [menu, setMenu] = useState(false),
     dialog = useRef<HTMLDialogElement>(null),
     location = useLocation(),
@@ -127,12 +123,13 @@ export function StoreLayout() {
           <Link
             className="icon-button"
             aria-label="Your account"
-            to={user ? '/account' : '/sign-in'}
+            to={user?.role === 'ADMIN' ? '/admin' : user ? '/account' : '/sign-in'}
           >
             <UserRound size={18} />
           </Link>
           <button
             className="bag-button"
+            data-cart-target
             onClick={() => dialog.current?.showModal()}
             aria-label={`Open bag, ${count} items`}
           >
@@ -151,7 +148,9 @@ export function StoreLayout() {
         </div>
       </header>
       <main id="main">
-        <Outlet />
+        <Suspense fallback={<Loading />}>
+          <Outlet />
+        </Suspense>
       </main>
       <footer className="store-footer">
         <div>
@@ -174,13 +173,7 @@ export function StoreLayout() {
             <select
               aria-label="Store region"
               value={cart.marketId}
-              onChange={(e) =>
-                action.run(async () =>
-                  updateCart(
-                    await send<Cart>('/cart/context', { marketId: e.target.value }, 'PATCH'),
-                  ),
-                )
-              }
+              onChange={(e) => action.run(() => setMarket(e.target.value))}
             >
               {config.markets.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -236,10 +229,7 @@ export function StoreLayout() {
               <CartLines />
             </div>
             <div className="drawer-bottom">
-              <div className="split">
-                <span>Subtotal</span>
-                <strong>{money(cart.subtotalMinor)}</strong>
-              </div>
+              <BagTotals />
               <p className="muted">Delivery and taxes confirmed at checkout.</p>
               <button
                 className="button wide"

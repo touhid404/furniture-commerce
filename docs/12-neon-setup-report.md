@@ -1,5 +1,7 @@
 # Neon setup and verification report
 
+> Historical foundation record. The later implementation and verified application state supersede the “remaining work” below; see [release verification](15-release-verification.md). The app now uses PostgreSQL and private Object Storage on the selected production branch, with reviewed commerce migrations.
+
 ## Result
 
 On 18 October 2026, the React and Express foundation was connected to the user-selected Neon PostgreSQL service through Prisma. The compiled application starts, configuration checks pass, a live read-only database test passes, and a real browser verifies the React to Express to Prisma to Neon to rendered-response flow. The commerce storefront, authentication, admin operations and checkout remain future implementation phases.

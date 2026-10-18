@@ -3,7 +3,7 @@
   "info": {
     "title": "Furniture Commerce API",
     "version": "1.0.0",
-    "description": "Implemented React/Express commerce API. COD is the only active payment method; SSLCommerz is deferred. Mutations require an opaque session cookie and X-CSRF-Token. Start with GET /auth/csrf. Admin operations require ADMIN and MFA in production. Money is serialized as integer minor-unit strings. Responses may include a pagination meta object."
+    "description": "Implemented React/Express commerce API. COD is the only active payment method; SSLCommerz is deferred. Mutations require an opaque session cookie and X-CSRF-Token. Start with GET /auth/csrf. Admin operations require ADMIN and MFA in production. Money is serialized as integer minor-unit strings. Listing requests default to 12 products and return pagination metadata. Guest carts are local; syncing, quoting and ordering require authentication."
   },
   "servers": [
     {
@@ -359,7 +359,7 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email"
+                    "description": "Email address or username"
                   },
                   "password": {
                     "type": "string"
@@ -1282,12 +1282,16 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Product"
+                        "$ref": "#/components/schemas/ProductCard"
                       }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
                     }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -1308,6 +1312,13 @@
         "parameters": [
           {
             "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1372,6 +1383,72 @@
           {
             "name": "availability",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/product-prices": {
+      "get": {
+        "operationId": "get_product_prices",
+        "summary": "GET /product-prices",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "product-prices"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "marketId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1548,6 +1625,217 @@
             "application/json": {
               "schema": {
                 "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/sync": {
+      "post": {
+        "operationId": "post_cart_sync",
+        "summary": "POST /cart/sync",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "marketId": {
+                    "type": "string"
+                  },
+                  "couponCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "items": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      },
+                      "required": [
+                        "variantId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "marketId",
+                  "items"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/promotions/preview": {
+      "post": {
+        "operationId": "post_promotions_preview",
+        "summary": "POST /promotions/preview",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "promotions"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PromotionPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "marketId": {
+                    "type": "string"
+                  },
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      },
+                      "required": [
+                        "variantId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "code",
+                  "marketId",
+                  "items"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -2238,6 +2526,68 @@
         }
       }
     },
+    "/orders/lookup": {
+      "get": {
+        "operationId": "get_orders_lookup",
+        "summary": "GET /orders/lookup",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "orders"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orderId": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "orderId"
+                      ],
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
     "/orders/{id}": {
       "get": {
         "operationId": "get_orders_id",
@@ -2500,10 +2850,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -2520,7 +2879,41 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/orders/{id}": {
@@ -3078,10 +3471,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -3098,7 +3500,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "post_admin_products",
@@ -3362,10 +3791,10 @@
         }
       }
     },
-    "/admin/categories": {
+    "/admin/categories/options": {
       "get": {
-        "operationId": "get_admin_categories",
-        "summary": "GET /admin/categories",
+        "operationId": "get_admin_categories_options",
+        "summary": "GET /admin/categories/options",
         "description": "Administrator only. State transitions and stock changes are checked server-side.",
         "tags": [
           "Admin"
@@ -3404,6 +3833,86 @@
             }
           }
         }
+      }
+    },
+    "/admin/categories": {
+      "get": {
+        "operationId": "get_admin_categories",
+        "summary": "GET /admin/categories",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "post_admin_categories",
@@ -3623,10 +4132,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -3643,7 +4161,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/inventory/{id}/adjustments": {
@@ -3757,10 +4302,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -3777,7 +4331,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/returns/{id}/decisions": {
@@ -3947,10 +4528,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -3967,7 +4557,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/reviews/{id}": {
@@ -4064,10 +4681,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -4084,7 +4710,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "post_admin_coupons",
@@ -4243,10 +4896,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -4263,7 +4925,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "post_admin_content",
@@ -4443,6 +5132,81 @@
             }
           }
         }
+      },
+      "put": {
+        "operationId": "put_admin_config",
+        "summary": "PUT /admin/config",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/StoreProfile"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "profile",
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/admin/audit": {
@@ -4466,10 +5230,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -4486,7 +5259,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/notifications": {
@@ -4510,10 +5310,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -4530,7 +5339,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/admin/exports/orders": {
@@ -4873,10 +5709,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {}
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ],
                   "additionalProperties": true
                 }
@@ -4893,7 +5738,34 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "post_admin_media",
@@ -5778,6 +6650,12 @@
               },
               "shippingConfigured": {
                 "type": "boolean"
+              },
+              "testWritesAllowed": {
+                "type": "boolean"
+              },
+              "demoSignIn": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5793,6 +6671,10 @@
               "guestEnabled": {
                 "type": "boolean"
               },
+              "maxQuantityPerSku": {
+                "type": "integer",
+                "minimum": 1
+              },
               "codEnabled": {
                 "type": "boolean"
               },
@@ -5802,6 +6684,7 @@
             },
             "required": [
               "guestEnabled",
+              "maxQuantityPerSku",
               "codEnabled",
               "onlinePaymentLabel"
             ],
@@ -5837,6 +6720,12 @@
           },
           "demo": {
             "type": "boolean"
+          },
+          "delivery": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -5860,6 +6749,798 @@
       "MinorUnits": {
         "type": "string",
         "pattern": "^[0-9]+$"
+      },
+      "ProductCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "art": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "badge": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "category": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "slug"
+            ],
+            "additionalProperties": true
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Variant"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reviewCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "art",
+          "color",
+          "background",
+          "imageUrl",
+          "badge",
+          "status",
+          "category",
+          "variants",
+          "rating",
+          "reviewCount"
+        ],
+        "additionalProperties": true
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "currentPage": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "total",
+          "totalItems",
+          "page",
+          "currentPage",
+          "limit",
+          "pages",
+          "totalPages",
+          "hasNextPage"
+        ],
+        "additionalProperties": true
+      },
+      "PromotionPreview": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "percent": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "subtotalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "discountMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "totalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "variantId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "quantity": {
+                  "type": "integer"
+                },
+                "unitPriceMinor": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              },
+              "required": [
+                "variantId",
+                "quantity",
+                "unitPriceMinor"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "code",
+          "percent",
+          "currency",
+          "subtotalMinor",
+          "discountMinor",
+          "totalMinor",
+          "expiresAt",
+          "items"
+        ],
+        "additionalProperties": true
+      },
+      "StoreProfile": {
+        "title": "Store profile",
+        "description": "Structural validation; cross-field and production-readiness checks are also required.",
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "const": 1
+          },
+          "storeId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "revision": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "mode": {
+            "type": "string",
+            "maxLength": 5000,
+            "enum": [
+              "development",
+              "demo",
+              "production"
+            ]
+          },
+          "brand": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "tagline": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "logoPath": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "supportEmail": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "name",
+              "tagline",
+              "logoPath",
+              "supportEmail"
+            ],
+            "additionalProperties": false
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "defaultLocale": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "locales": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+            },
+            "maxItems": 100
+          },
+          "defaultMarketId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "minorUnitDigits": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                }
+              },
+              "required": [
+                "code",
+                "minorUnitDigits"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "markets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "country": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{2}$"
+                },
+                "currency": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "locales": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5000
+                  },
+                  "maxItems": 100
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "country",
+                "currency",
+                "locales",
+                "enabled"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "theme": {
+            "type": "object",
+            "properties": {
+              "canvas": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "surface": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "ink": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "muted": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "sage": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "butter": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "blue": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "accent": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            },
+            "required": [
+              "canvas",
+              "surface",
+              "ink",
+              "muted",
+              "sage",
+              "butter",
+              "blue",
+              "accent"
+            ],
+            "additionalProperties": false
+          },
+          "navigation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "href": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "home": {
+            "type": "object",
+            "properties": {
+              "eyebrow": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "headline": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "featuredSku": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "deliveryPromise": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "eyebrow",
+              "headline",
+              "featuredSku",
+              "deliveryPromise"
+            ],
+            "additionalProperties": false
+          },
+          "checkout": {
+            "type": "object",
+            "properties": {
+              "guestEnabled": {
+                "type": "boolean"
+              },
+              "maxQuantityPerSku": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "reservationMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "quoteMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              },
+              "card": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "maxLength": 5000,
+                    "enum": [
+                      "unconfigured",
+                      "stripe",
+                      "adyen",
+                      "sslcommerz",
+                      "custom"
+                    ]
+                  }
+                },
+                "required": [
+                  "enabled",
+                  "provider"
+                ],
+                "additionalProperties": false
+              },
+              "cod": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "countryAllowlist": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "maxItems": 100
+                  },
+                  "maximumByCurrency": {
+                    "type": "object",
+                    "propertyNames": {
+                      "pattern": "^[A-Z]{3}$"
+                    },
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    }
+                  }
+                },
+                "required": [
+                  "enabled",
+                  "countryAllowlist",
+                  "maximumByCurrency"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "guestEnabled",
+              "maxQuantityPerSku",
+              "reservationMinutes",
+              "quoteMinutes",
+              "card",
+              "cod"
+            ],
+            "additionalProperties": false
+          },
+          "shipping": {
+            "type": "object",
+            "properties": {
+              "configured": {
+                "type": "boolean"
+              },
+              "rates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 5000
+                    },
+                    "marketId": {
+                      "type": "string",
+                      "maxLength": 5000
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 5000
+                    },
+                    "currency": {
+                      "type": "string",
+                      "maxLength": 5000
+                    },
+                    "feeMinor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "freeOverMinor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "estimatedDaysMin": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "estimatedDaysMax": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "marketId",
+                    "label",
+                    "currency",
+                    "feeMinor",
+                    "freeOverMinor",
+                    "estimatedDaysMin",
+                    "estimatedDaysMax"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 100
+              }
+            },
+            "required": [
+              "configured",
+              "rates"
+            ],
+            "additionalProperties": false
+          },
+          "tax": {
+            "type": "object",
+            "properties": {
+              "configured": {
+                "type": "boolean"
+              },
+              "mode": {
+                "type": "string",
+                "maxLength": 5000,
+                "enum": [
+                  "inclusive",
+                  "exclusive"
+                ]
+              },
+              "shippingTaxable": {
+                "type": "boolean"
+              },
+              "rateBasisPoints": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "configured",
+              "mode",
+              "shippingTaxable",
+              "rateBasisPoints"
+            ],
+            "additionalProperties": false
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "windowDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cancellationCutoff": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "windowDays",
+              "cancellationCutoff"
+            ],
+            "additionalProperties": false
+          },
+          "dashboard": {
+            "type": "object",
+            "properties": {
+              "pollSeconds": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 9007199254740991
+              },
+              "dailyGoalByCurrency": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "required": [
+              "pollSeconds",
+              "dailyGoalByCurrency"
+            ],
+            "additionalProperties": false
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "demoAdmin": {
+                "type": "boolean"
+              },
+              "simulateTraffic": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "demoAdmin",
+              "simulateTraffic"
+            ],
+            "additionalProperties": false
+          },
+          "messages": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "setupTitle": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "setupDescription": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "databaseLabel": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "checking": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "checkAgain": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "connected": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "unavailable": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "pending": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "bag": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "readyNote": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "errorNote": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "onlinePaymentComingSoon": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "setupTitle",
+                "setupDescription",
+                "databaseLabel",
+                "checking",
+                "checkAgain",
+                "connected",
+                "unavailable",
+                "pending",
+                "bag",
+                "readyNote",
+                "errorNote",
+                "onlinePaymentComingSoon"
+              ],
+              "additionalProperties": false
+            },
+            "minProperties": 1
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "storeId",
+          "revision",
+          "mode",
+          "brand",
+          "timezone",
+          "defaultLocale",
+          "locales",
+          "defaultMarketId",
+          "currencies",
+          "markets",
+          "theme",
+          "navigation",
+          "home",
+          "checkout",
+          "shipping",
+          "tax",
+          "returns",
+          "dashboard",
+          "features",
+          "messages"
+        ],
+        "additionalProperties": false
       }
     }
   }

@@ -9,11 +9,13 @@ import { ProductArt } from '../components/ProductArt.js';
 import { Badge, Empty, Field, Loading, Notice, PageTitle } from '../components/UI.js';
 import { AddressFields } from './Checkout.js';
 export function Account() {
-  const { user, config, cart, logout, refresh, notify } = useStore(),
+  const { user, authReady, config, cart, logout, refresh, notify } = useStore(),
     navigate = useNavigate(),
-    orders = useResource<Order[]>(user ? '/orders' : null),
+    orders = useResource<Order[]>(user?.role === 'CUSTOMER' ? '/orders' : null),
     addresses = useResource<Address[]>(user ? '/account/addresses' : null),
     action = useAction();
+  if (!authReady) return <Loading />;
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
   if (!user) return <Navigate to="/sign-in" replace />;
   return (
     <section className="standard-page">
@@ -66,11 +68,6 @@ export function Account() {
             <ShieldCheck size={14} />
             Authenticator security
           </Link>
-          {user.role === 'ADMIN' && (
-            <Link className="button outline" to="/admin">
-              Open store admin ↗
-            </Link>
-          )}
         </section>
         <section className="panel form-panel">
           <h2>Your orders</h2>

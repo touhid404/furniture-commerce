@@ -1,6 +1,6 @@
 # API specification
 
-> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 87-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
 
 ## Contract conventions
 

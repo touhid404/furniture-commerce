@@ -12,11 +12,19 @@ This is the implementation status for the current feature branch. The owner conf
 - Neon `assets` uploads with file-signature and size checks, stable saved product URLs, expiring signed downloads, and in-use deletion protection.
 - Transactional outbox worker, SMTP adapter, storage cleanup, bounded retries and exhausted-lease recovery.
 - Crawlable product/catalog HTML, metadata, structured product data, robots and sitemap; Docker/runtime and operator guidance.
-- Twenty-five separate Prisma model files and four forward SQL migrations.
-- An OpenAPI inventory generated from 81 implemented route operations.
+- Twenty-six separate Prisma model files and six forward SQL migrations.
+- An OpenAPI inventory generated from 87 implemented route operations.
 
-## Verification in progress
+## Verification
 
 Unit tests, compilation, configuration/schema checks and actual Neon connectivity have passed. Browser tests have exercised purchase through delivery, COD collection, review, return and manual refund. Upload acceptance has written an image to Neon, read matching bytes, attached it to a product and rejected deletion while referenced.
 
-Full acceptance is still running on the development branch. Concurrency and accessibility checks identified defects that are being corrected and rerun. Final verification results, consolidated production branch state, and GitHub merge status will be recorded in the release verification report before merging. This document does not claim production deployment or real email-provider activation.
+Full acceptance uses a temporary isolated test branch; production connectivity is checked read-only. See [release verification](15-release-verification.md) for measured results, checks and final Git status. Public hosting, merchant policy/catalog approval and SMTP provider activation remain external launch setup.
+
+## Performance and interaction milestone
+
+The owner approved the one-time reset on production and selected it as the active app branch. Sixteen sample products now use actual photographs stored in Neon, with idempotent seeding and smaller card derivatives. Guest bags are instant local state; authenticated checkout revalidates identifiers and quantities against server prices and stock. The storefront uses shared public request caching, in-flight deduplication, a single catalog query per page, 12-product pagination, debounced search, route chunks and content skeletons. Flying image motion is 1.05 seconds and respects reduced motion. Two landing sections add category discovery and shopping guidance. Spacing uses a 4px rhythm, the existing palette is retained, and hero images/search controls have bounded responsive layouts.
+
+## Admin experience and final refinements
+
+Shared middleware rejects guests/customers across all 44 admin route/method combinations. Admin login opens the dashboard. Lists support pagination/search; mutations/logout require confirmation. Settings offers simple fields with validated persistent JSON and revision checks. Product specifications are always visible. Stock adjustments update counts immediately. Empty proxy responses are handled safely without automatic write retries.

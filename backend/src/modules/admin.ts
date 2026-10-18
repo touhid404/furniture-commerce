@@ -1,41 +1,17 @@
+import { saveStoreSettings } from '../services/store-settings.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
 import { storeConfig } from '../config.js';
-import { requireAdmin } from './auth.js';
-import {
-  audit,
-  atomic,
-  csvCell,
-  event,
-  fail,
-  id,
-  json,
-  lockOrder,
-  moveStock,
-  safeUrl,
-} from '../services/core.js';
+import { requireAdmin } from '../middleware/authorization.js';
+import { audit, atomic, csvCell, event, fail, id, lockOrder, moveStock } from '../services/core.js';
 import { cancelOrder } from './commerce.js';
 import { media } from './media.js';
+import { pageInput, pageWindow, sendPage } from '../services/pagination.js';
+import { productInput } from '../services/products.js';
 export const admin = Router();
 admin.use(requireAdmin);
-admin.use((req, _res, next) => {
-  if (
-    storeConfig.mode === 'production' &&
-    (!req.shopSession!.user!.totpSecret || !req.shopSession!.mfaVerified)
-  )
-    fail(
-      403,
-      'MFA_ENROLLMENT_REQUIRED',
-      'Enable administrator MFA in account settings before operating this production store.',
-    );
-  next();
-});
-const pagination = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(30),
-});
 admin.get('/dashboard', async (req, res) => {
   const range = z.enum(['7d', '30d', '90d']).catch('30d').parse(req.query.range);
   const currency = String(req.query.currency ?? storeConfig.currencies[0].code);
@@ -148,7 +124,7 @@ admin.get('/dashboard', async (req, res) => {
   });
 });
 admin.get('/orders', async (req, res) => {
-  const q = pagination
+  const q = pageInput
     .extend({
       q: z.string().max(100).optional(),
       status: z.enum(['CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED']).optional(),
@@ -169,7 +145,7 @@ admin.get('/orders', async (req, res) => {
     prisma.order.findMany({
       where,
       include: { items: true, shipment: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: (q.page - 1) * q.limit,
       take: q.limit,
     }),
@@ -177,7 +153,16 @@ admin.get('/orders', async (req, res) => {
   ]);
   res.json({
     data,
-    meta: { total, page: q.page, pages: Math.ceil(total / q.limit) },
+    meta: {
+      total,
+      totalItems: total,
+      page: q.page,
+      currentPage: q.page,
+      limit: q.limit,
+      pages: Math.ceil(total / q.limit),
+      totalPages: Math.ceil(total / q.limit),
+      hasNextPage: q.page < Math.ceil(total / q.limit),
+    },
   });
 });
 admin.get('/orders/:id', async (req, res) => {
@@ -374,45 +359,27 @@ admin.post('/orders/:id/refunds', async (req, res) => {
     }),
   });
 });
-const productInput = z
-  .object({
-    name: z.string().trim().min(2).max(120),
-    slug: z
-      .string()
-      .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
-      .max(120),
-    categoryId: id,
-    description: z.string().min(10).max(5000),
-    materials: z.string().max(2000).default(''),
-    dimensions: z.string().max(500).default(''),
-    care: z.string().max(1000).default(''),
-    art: z.enum(['chair', 'lamp', 'pendant', 'table', 'sofa', 'vase', 'textile']).default('chair'),
-    color: z.string().regex(/^#[a-fA-F0-9]{6}$/),
-    background: z.string().regex(/^#[a-fA-F0-9]{6}$/),
-    badge: z.string().max(30).default(''),
-    imageUrl: safeUrl.default(''),
-    featuredRank: z.number().int().min(0).max(1000).default(0),
-    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
-    sku: z.string().trim().min(2).max(60),
-    label: z.string().max(100).default('Standard'),
-    priceMinor: z.coerce.bigint().min(0n).max(1000000000000n),
-    onHand: z.number().int().min(0).max(100000),
-    version: z.number().int().optional(),
-  })
-  .strict();
 admin.get('/products', async (req, res) => {
-  const q = z.string().max(100).catch('').parse(req.query.q);
-  res.json({
-    data: await prisma.product.findMany({
-      where: q ? { name: { contains: q, mode: 'insensitive' } } : {},
-      include: {
-        category: true,
-        variants: { include: { prices: true, inventory: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
+  const query = pageInput.parse(req.query);
+  const where = query.q
+    ? {
+        OR: [
+          { name: { contains: query.q, mode: 'insensitive' as const } },
+          { variants: { some: { sku: { contains: query.q, mode: 'insensitive' as const } } } },
+        ],
+      }
+    : {};
+  await sendPage(
+    res,
+    query,
+    prisma.product.findMany({
+      where,
+      include: { category: true, variants: { include: { prices: true, inventory: true } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      ...pageWindow(query),
     }),
-  });
+    prisma.product.count({ where }),
+  );
 });
 admin.get('/products/:id', async (req, res) => {
   const p = await prisma.product.findUnique({
@@ -543,14 +510,36 @@ admin.post('/products/:id/archive', async (req, res) =>
     }),
   }),
 );
-admin.get('/categories', async (_req, res) =>
+admin.get('/categories/options', async (_req, res) =>
   res.json({
     data: await prisma.category.findMany({
-      include: { _count: { select: { products: true } } },
-      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true, slug: true },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     }),
   }),
 );
+admin.get('/categories', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { name: { contains: query.q, mode: 'insensitive' as const } },
+            { slug: { contains: query.q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.category.findMany({
+      where,
+      include: { _count: { select: { products: true } } },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      ...pageWindow(query),
+    }),
+    prisma.category.count({ where }),
+  );
+});
 const catInput = z
   .object({
     name: z.string().min(2).max(80),
@@ -565,46 +554,72 @@ const catInput = z
   .strict();
 admin.post('/categories', async (req, res) =>
   res.status(201).json({
-    data: await prisma.category.create({ data: catInput.parse(req.body) }),
+    data: await adminMutation(req, 'CATEGORY_CREATED', (tx) =>
+      tx.category.create({ data: catInput.parse(req.body) }),
+    ),
   }),
 );
 admin.patch('/categories/:id', async (req, res) =>
   res.json({
-    data: await prisma.category.update({
-      where: { id: id.parse(req.params.id) },
-      data: catInput.parse(req.body),
-    }),
+    data: await adminMutation(req, 'CATEGORY_UPDATED', (tx) =>
+      tx.category.update({
+        where: { id: id.parse(req.params.id) },
+        data: catInput.parse(req.body),
+      }),
+    ),
   }),
 );
 admin.delete('/categories/:id', async (req, res) => {
   const categoryId = id.parse(req.params.id);
   if (await prisma.product.count({ where: { categoryId } }))
     fail(409, 'CATEGORY_IN_USE', 'Reassign products before removing this category.');
-  await prisma.category.delete({ where: { id: categoryId } });
+  await adminMutation(req, 'CATEGORY_DELETED', (tx) =>
+    tx.category.delete({ where: { id: categoryId } }),
+  );
   res.json({ data: { ok: true } });
 });
-admin.get('/inventory', async (_req, res) =>
-  res.json({
-    data: await prisma.inventory.findMany({
+admin.get('/inventory', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          variant: {
+            OR: [
+              { sku: { contains: query.q, mode: 'insensitive' as const } },
+              { product: { name: { contains: query.q, mode: 'insensitive' as const } } },
+            ],
+          },
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.inventory.findMany({
+      where,
       include: {
         variant: { include: { product: true } },
         movements: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
-      orderBy: { onHand: 'asc' },
-      take: 200,
+      orderBy: [{ onHand: 'asc' }, { id: 'asc' }],
+      ...pageWindow(query),
     }),
-  }),
-);
+    prisma.inventory.count({ where }),
+  );
+});
 admin.post('/inventory/:id/adjustments', async (req, res) => {
   const d = z
     .object({
-      delta: z.number().int().min(-10000).max(10000),
+      delta: z
+        .number()
+        .int()
+        .min(-10000)
+        .max(10000)
+        .refine((value) => value !== 0, 'Enter a non-zero stock adjustment.'),
       reason: z.string().trim().min(5).max(200),
       version: z.number().int(),
     })
     .strict()
     .parse(req.body);
-  await atomic(async (tx) => {
+  const updated = await atomic(async (tx) => {
     const i = await tx.inventory.findUnique({
       where: { id: id.parse(req.params.id) },
     });
@@ -613,18 +628,38 @@ admin.post('/inventory/:id/adjustments', async (req, res) => {
       fail(409, 'VERSION_CONFLICT', 'Stock changed. Refresh before adjusting it.');
     await moveStock(tx, i.variantId, d.delta, 0, d.reason, randomUUID(), req.shopSession!.userId!);
     await audit(tx, req.shopSession!.userId!, 'STOCK_ADJUSTED', i.id, d);
+    return tx.inventory.findUniqueOrThrow({
+      where: { id: i.id },
+      include: {
+        variant: { include: { product: true } },
+        movements: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
   });
-  res.json({ data: { ok: true } });
+  res.json({ data: updated });
 });
-admin.get('/returns', async (_req, res) =>
-  res.json({
-    data: await prisma.returnRequest.findMany({
+admin.get('/returns', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { reason: { contains: query.q, mode: 'insensitive' as const } },
+            { order: { number: { contains: query.q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.returnRequest.findMany({
+      where,
       include: { order: { include: { items: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      ...pageWindow(query),
     }),
-  }),
-);
+    prisma.returnRequest.count({ where }),
+  );
+});
 admin.post('/returns/:id/decisions', async (req, res) => {
   const d = z
     .object({
@@ -698,31 +733,48 @@ admin.post('/returns/:id/receipts', async (req, res) => {
     }),
   });
 });
-admin.get('/reviews', async (_req, res) =>
-  res.json({
-    data: await prisma.review.findMany({
-      include: {
-        product: { select: { name: true } },
-        user: { select: { name: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+admin.get('/reviews', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { body: { contains: query.q, mode: 'insensitive' as const } },
+            { product: { name: { contains: query.q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.review.findMany({
+      where,
+      include: { product: { select: { name: true } }, user: { select: { name: true } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      ...pageWindow(query),
     }),
-  }),
-);
+    prisma.review.count({ where }),
+  );
+});
 admin.patch('/reviews/:id', async (req, res) =>
   res.json({
-    data: await prisma.review.update({
-      where: { id: id.parse(req.params.id) },
-      data: z.object({ published: z.boolean() }).strict().parse(req.body),
-    }),
+    data: await adminMutation(req, 'REVIEW_MODERATED', (tx) =>
+      tx.review.update({
+        where: { id: id.parse(req.params.id) },
+        data: z.object({ published: z.boolean() }).strict().parse(req.body),
+      }),
+    ),
   }),
 );
-admin.get('/coupons', async (_req, res) =>
-  res.json({
-    data: await prisma.coupon.findMany({ orderBy: { code: 'asc' } }),
-  }),
-);
+admin.get('/coupons', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q ? { code: { contains: query.q, mode: 'insensitive' as const } } : {};
+  await sendPage(
+    res,
+    query,
+    prisma.coupon.findMany({ where, orderBy: { code: 'asc' }, ...pageWindow(query) }),
+    prisma.coupon.count({ where }),
+  );
+});
 const couponInput = z
   .object({
     code: z
@@ -741,25 +793,42 @@ const couponInput = z
   .strict();
 admin.post('/coupons', async (req, res) =>
   res.status(201).json({
-    data: await prisma.coupon.create({ data: couponInput.parse(req.body) }),
+    data: await adminMutation(req, 'COUPON_CREATED', (tx) =>
+      tx.coupon.create({ data: couponInput.parse(req.body) }),
+    ),
   }),
 );
 admin.patch('/coupons/:id', async (req, res) =>
   res.json({
-    data: await prisma.coupon.update({
-      where: { id: id.parse(req.params.id) },
-      data: couponInput.parse(req.body),
-    }),
+    data: await adminMutation(req, 'COUPON_UPDATED', (tx) =>
+      tx.coupon.update({
+        where: { id: id.parse(req.params.id) },
+        data: couponInput.parse(req.body),
+      }),
+    ),
   }),
 );
-admin.get('/content', async (_req, res) =>
-  res.json({
-    data: await prisma.contentRevision.findMany({
+admin.get('/content', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { title: { contains: query.q, mode: 'insensitive' as const } },
+            { key: { contains: query.q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.contentRevision.findMany({
+      where,
       orderBy: [{ key: 'asc' }, { revision: 'desc' }],
-      take: 100,
+      ...pageWindow(query),
     }),
-  }),
-);
+    prisma.contentRevision.count({ where }),
+  );
+});
 admin.post('/content', async (req, res) => {
   const d = z
     .object({
@@ -778,9 +847,11 @@ admin.post('/content', async (req, res) => {
         where: { key: d.key },
         orderBy: { revision: 'desc' },
       });
-      return tx.contentRevision.create({
+      const draft = await tx.contentRevision.create({
         data: { ...d, revision: (old?.revision ?? 0) + 1 },
       });
+      await audit(tx, req.shopSession!.userId!, 'CONTENT_DRAFTED', draft.id);
+      return draft;
     }),
   });
 });
@@ -813,29 +884,60 @@ admin.get('/config', (_req, res) =>
         payment: 'COMING_SOON',
         databaseBranch: process.env.NEON_BRANCH,
       },
-      message: 'Store variables are managed in versioned JSON. Credentials are environment-only.',
+      message:
+        'Validated settings persist in PostgreSQL and survive restarts. The JSON profile is the initial default. Credentials and deployment security remain server-controlled.',
     },
   }),
 );
-admin.get('/audit', async (_req, res) =>
+admin.put('/config', async (req, res) => {
+  const input = z
+    .object({ profile: z.unknown(), expectedRevision: z.string().min(1).max(200) })
+    .strict()
+    .parse(req.body);
   res.json({
-    data: await prisma.auditLog.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+    data: await saveStoreSettings(input.profile, input.expectedRevision, req.shopSession!.userId!),
+  });
+});
+admin.get('/audit', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { action: { contains: query.q, mode: 'insensitive' as const } },
+            { target: { contains: query.q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+  await sendPage(
+    res,
+    query,
+    prisma.auditLog.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      ...pageWindow(query),
     }),
-  }),
-);
-admin.get('/notifications', async (_req, res) => {
-  const jobs = await prisma.outboxJob.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  });
-  res.json({
-    data: jobs.map((j) => ({
-      ...j,
-      payload: storeConfig.mode === 'demo' ? j.payload : { redacted: true },
-    })),
-  });
+    prisma.auditLog.count({ where }),
+  );
+});
+admin.get('/notifications', async (req, res) => {
+  const query = pageInput.parse(req.query),
+    where = query.q
+      ? {
+          OR: [
+            { type: { contains: query.q, mode: 'insensitive' as const } },
+            { error: { contains: query.q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+  const rows = prisma.outboxJob
+    .findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], ...pageWindow(query) })
+    .then((jobs) =>
+      jobs.map((job) => ({
+        ...job,
+        payload: storeConfig.mode === 'demo' ? job.payload : { redacted: true },
+      })),
+    );
+  await sendPage(res, query, rows, prisma.outboxJob.count({ where }));
 });
 admin.get('/exports/orders', async (req, res) => {
   const orders = await prisma.order.findMany({
@@ -983,3 +1085,15 @@ admin.patch('/variants/:id', async (req, res) => {
     }),
   });
 });
+
+async function adminMutation<T extends { id: string }>(
+  req: import('express').Request,
+  action: string,
+  fn: (tx: import('../services/core.js').Tx) => Promise<T>,
+) {
+  return atomic(async (tx) => {
+    const row = await fn(tx);
+    await audit(tx, req.shopSession!.userId!, action, row.id);
+    return row;
+  });
+}

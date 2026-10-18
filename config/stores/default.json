@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "storeId": "furniture-demo",
-  "revision": "2026-10-18.2",
+  "revision": "2026-10-18.3",
   "mode": "demo",
   "brand": {
     "name": "KVIST",
@@ -71,7 +71,7 @@
     "deliveryPromise": "Dispatched in 48h. 30-night trial."
   },
   "checkout": {
-    "guestEnabled": true,
+    "guestEnabled": false,
     "maxQuantityPerSku": 10,
     "reservationMinutes": 15,
     "quoteMinutes": 10,

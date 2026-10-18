@@ -4,13 +4,13 @@
 
 The owner requested countries, currencies and other store variables in JSON so another owner can adapt the store. Use one versioned JSON profile per deployment. `store.example.json` is an illustrative profile in the video's USD/English style; it is not the selected launch country. Validate against `store.schema.json` at startup, in CI and before publishing configuration changes.
 
-JSON controls brand identity, logo path, theme tokens, supported locales, default market, market-to-currency relationships, money precision, timezone, navigation labels, hero copy, checkout flags, card/COD enablement, stock-reservation duration, delivery rules, tax mode and dashboard goals. Locale dictionaries hold all UI labels and validation text. Product translations and prices remain database records. Credentials belong only in backend environment variables, never in public JSON, GitHub, screenshots or a frontend build.
+JSON controls brand identity, logo path, theme tokens, supported locales, default market, market-to-currency relationships, money precision, timezone, navigation labels, hero copy, checkout flags, card/COD enablement, stock-reservation duration, delivery rules, tax mode and dashboard goals. Locale dictionaries hold configurable messages. The current interface is English; adding complete translations and RTL layout acceptance is additional owner setup. Product translations and prices remain database records. Credentials belong only in backend environment variables, never in public JSON, GitHub, screenshots or a frontend build.
 
 ## Public and server configuration
 
 The API exposes only an allowlisted subset through `/config`: branding, theme, locales, display currencies, market options, navigation, published content and customer-visible checkout options. Internal provider settings, operational caps, trusted origins and administrative feature controls remain server-side. Do not publish the full JSON object by default.
 
-At startup, select `STORE_CONFIG_PATH`, parse once, validate schema and cross-field rules, compute a content hash, and freeze the active config. Fail fast on invalid currency mappings, unavailable locales, unknown timezone, duplicate IDs, contradictory COD settings or unsafe URLs. A production guard also rejects demo mode, unconfigured card adapters and unresolved shipping/tax setup. The example intentionally marks integrations and launch rules unconfigured until supplied.
+At startup, select `STORE_CONFIG_PATH`, validate the bootstrap JSON, then load any saved `StoreSettings` JSON revision from PostgreSQL. The API and worker refresh this bounded cache every five seconds, and the process saving settings applies the revision immediately. Fail fast on invalid currency mappings, unavailable locales, unknown timezone, duplicate IDs, contradictory COD settings or unsafe URLs. A production profile rejects demo bypasses and unresolved shipping/tax setup. Card setup remains disabled and server-controlled in the COD-only release. The example intentionally marks integrations and launch rules unconfigured until supplied.
 
 ## Localization and price books
 
@@ -20,7 +20,9 @@ Selecting another currency must load an actual per-SKU price in that market. Hid
 
 ## Administration and owner reuse
 
-At launch, admins can view the active config and readiness but change owner-wide variables through reviewed JSON commits and redeployment. Catalog and home content have admin workflows because they are operational records. A future settings editor may export validated JSON revisions; it must preserve this contract and cannot write arbitrary environment secrets.
+Admin Settings provides ordinary form fields for store name, support email, tagline, timezone, default configured language/region, homepage text, featured SKU, delivery fees and times, maximum product quantities, COD caps and the return window. It does not expose raw JSON, demo mode, credentials or deployment/security flags. Validated JSON is persisted in the separate `StoreSettings` table with optimistic revision checks and an audit event. The root JSON remains the bootstrap profile; saved settings survive restarts. New markets/currencies still require reviewed explicit SKU price books and delivery setup. Settings cannot change the deployment store ID, mode, authentication features or card integration. A stale revision returns 409; invalid or locked values return 422.
+
+Only server-authorized administrators may read or write admin settings. The frontend asks for confirmation before saving and refreshes its public profile afterward. The public endpoint retains its allowlist. Changed configuration revisions invalidate pending checkout quotes so the customer reviews current charges.
 
 To adapt for another owner: copy the example, set a unique store ID and brand, choose markets/locales/currencies, supply original assets, set price books and delivery/tax rules, configure provider credentials in that deployment's environment, validate, test and deploy against its own database. This is reusable single-store software. Shared merchant onboarding and tenant isolation are a separate feature.
 

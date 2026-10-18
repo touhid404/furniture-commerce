@@ -1,0 +1,6 @@
+model StoreSettings {
+  id        String   @id
+  revision  String
+  profile   Json
+  updatedAt DateTime @updatedAt
+}

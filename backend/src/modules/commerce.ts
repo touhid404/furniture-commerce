@@ -18,8 +18,8 @@ import {
   moveStock,
   type Tx,
 } from '../services/core.js';
-import type { Cart, Prisma, Order } from '../generated/prisma/client.js';
-import { calculateTotals, ownsCart } from '../services/calculations.js';
+import type { Cart, Order } from '../generated/prisma/client.js';
+import { calculateTotals, couponProblem, ownsCart } from '../services/calculations.js';
 export const commerce = Router();
 async function cartFor(req: Request, res: Response) {
   const s = await ensureSession(req, res);
@@ -76,6 +76,156 @@ export async function readCart(cart: Cart, db: Tx = prisma) {
     ),
   };
 }
+// Local cart snapshots contain identifiers and quantities only. Prices are always read here.
+commerce.post('/cart/sync', requireUser, async (req, res) => {
+  const input = z
+    .object({
+      marketId: z.string(),
+      couponCode: z.string().trim().max(30).nullable().optional(),
+      items: z
+        .array(
+          z
+            .object({
+              variantId: id,
+              quantity: z.number().int().min(1).max(storeConfig.checkout.maxQuantityPerSku),
+            })
+            .strict(),
+        )
+        .max(200)
+        .refine(
+          (items) => new Set(items.map((i) => i.variantId)).size === items.length,
+          'Duplicate variants are not accepted.',
+        ),
+    })
+    .strict()
+    .parse(req.body);
+  const market = storeConfig.markets.find((m) => m.enabled && m.id === input.marketId);
+  if (!market) fail(422, 'MARKET_INVALID', 'This market is unavailable.');
+  const cart = await cartFor(req, res);
+  const bag = await atomic(async (tx) => {
+    const variants = await tx.productVariant.count({
+      where: { id: { in: input.items.map((i) => i.variantId) } },
+    });
+    if (variants !== input.items.length)
+      fail(
+        422,
+        'PRODUCT_UNAVAILABLE',
+        'A bag item no longer exists. Remove it before checking out.',
+      );
+    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    if (input.items.length)
+      await tx.cartItem.createMany({ data: input.items.map((i) => ({ ...i, cartId: cart.id })) });
+    const updated = await tx.cart.update({
+      where: { id: cart.id },
+      data: {
+        marketId: market.id,
+        currency: market.currency,
+        couponCode: input.couponCode?.toUpperCase() || null,
+        version: { increment: 1 },
+      },
+    });
+    return readCart(updated, tx);
+  });
+  res.json({ data: bag });
+});
+const promotionInput = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(30)
+      .transform((v) => v.toUpperCase()),
+    marketId: z.string(),
+    items: z
+      .array(
+        z
+          .object({
+            variantId: id,
+            quantity: z.number().int().min(1).max(storeConfig.checkout.maxQuantityPerSku),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(200)
+      .refine(
+        (items) => new Set(items.map((i) => i.variantId)).size === items.length,
+        'Duplicate variants are not accepted.',
+      ),
+  })
+  .strict();
+function validatePromotion(
+  coupon: Awaited<ReturnType<typeof prisma.coupon.findUnique>>,
+  currency: string,
+  subtotal: bigint,
+) {
+  const problem = couponProblem(coupon, currency, subtotal);
+  if (!problem) return coupon!;
+  const digits = storeConfig.currencies.find((c) => c.code === currency)?.minorUnitDigits ?? 2;
+  const minimum = new Intl.NumberFormat(storeConfig.defaultLocale, {
+    style: 'currency',
+    currency,
+  }).format(Number(coupon?.minimumMinor ?? 0n) / 10 ** digits);
+  const messages = {
+    unavailable: 'This promotion code is not available.',
+    currency: 'This code is not valid in your selected region.',
+    exhausted: 'This promotion has reached its usage limit.',
+    expired: 'This promotion code has expired.',
+    minimum: `Spend at least ${minimum} to use this code.`,
+  };
+  fail(422, 'COUPON_INVALID', messages[problem]);
+}
+// Read-only preview: no database cart, reservation or coupon redemption is created.
+commerce.post('/promotions/preview', async (req, res) => {
+  const input = promotionInput.parse(req.body);
+  const market = storeConfig.markets.find((m) => m.enabled && m.id === input.marketId);
+  if (!market) fail(422, 'MARKET_INVALID', 'This market is unavailable.');
+  const [variants, coupon] = await Promise.all([
+    prisma.productVariant.findMany({
+      where: {
+        id: { in: input.items.map((i) => i.variantId) },
+        active: true,
+        product: { status: 'PUBLISHED', category: { active: true } },
+      },
+      select: {
+        id: true,
+        prices: {
+          where: { marketId: market.id, currency: market.currency },
+          select: { amountMinor: true },
+        },
+      },
+    }),
+    prisma.coupon.findUnique({ where: { code: input.code } }),
+  ]);
+  if (variants.length !== input.items.length || variants.some((v) => !v.prices.length))
+    fail(
+      422,
+      'PRODUCT_UNAVAILABLE',
+      'An item has no current price for this region. Review your bag.',
+    );
+  const items = input.items.map((item) => ({
+    ...item,
+    unitPriceMinor: variants.find((v) => v.id === item.variantId)!.prices[0].amountMinor,
+  }));
+  const subtotalMinor = items.reduce(
+    (total, item) => total + item.unitPriceMinor * BigInt(item.quantity),
+    0n,
+  );
+  const valid = validatePromotion(coupon, market.currency, subtotalMinor);
+  const discountMinor = (subtotalMinor * BigInt(valid.percent)) / 100n;
+  res.json({
+    data: {
+      code: valid.code,
+      percent: valid.percent,
+      currency: market.currency,
+      subtotalMinor,
+      discountMinor,
+      totalMinor: subtotalMinor - discountMinor,
+      expiresAt: valid.expiresAt,
+      items,
+    },
+  });
+});
 commerce.get('/cart', async (req, res) =>
   res.json({ data: await readCart(await cartFor(req, res)) }),
 );
@@ -224,12 +374,13 @@ const quoteInput = z
   .strict();
 type QuoteInput = z.infer<typeof quoteInput>;
 async function priceQuote(cart: Cart, input: QuoteInput, tx: Tx) {
-  if (!storeConfig.shipping.configured || !storeConfig.tax.configured)
+  const config = storeConfig;
+  if (!config.shipping.configured || !config.tax.configured)
     fail(503, 'CHECKOUT_UNCONFIGURED', 'Delivery rules are being prepared.');
-  const market = storeConfig.markets.find((m) => m.enabled && m.id === cart.marketId);
+  const market = config.markets.find((m) => m.enabled && m.id === cart.marketId);
   if (!market || market.country !== input.shippingAddress.country)
     fail(422, 'SHIPPING_UNAVAILABLE', 'This address is outside your selected market.');
-  const rate = storeConfig.shipping.rates.find(
+  const rate = config.shipping.rates.find(
     (s) =>
       s.id === input.shippingMethodId &&
       s.marketId === cart.marketId &&
@@ -243,33 +394,26 @@ async function priceQuote(cart: Cart, input: QuoteInput, tx: Tx) {
   let percent = 0;
   if (cart.couponCode) {
     const c = await tx.coupon.findUnique({ where: { code: cart.couponCode } });
-    if (
-      !c ||
-      !c.active ||
-      c.currency !== cart.currency ||
-      c.used >= c.maxUses ||
-      c.minimumMinor > bag.subtotalMinor ||
-      (c.expiresAt && c.expiresAt < new Date())
-    )
-      fail(422, 'COUPON_INVALID', 'Remove the unavailable promotion code.');
-    percent = c.percent;
+    const valid = validatePromotion(c, cart.currency, bag.subtotalMinor);
+    percent = valid.percent;
   }
   const shipping = bag.subtotalMinor >= BigInt(rate.freeOverMinor) ? 0n : BigInt(rate.feeMinor);
   const totals = calculateTotals(
     bag.subtotalMinor,
     percent,
     shipping,
-    storeConfig.tax.rateBasisPoints,
-    storeConfig.tax.mode === 'inclusive',
-    storeConfig.tax.shippingTaxable,
+    config.tax.rateBasisPoints,
+    config.tax.mode === 'inclusive',
+    config.tax.shippingTaxable,
   );
   if (
-    !storeConfig.checkout.cod.enabled ||
-    !storeConfig.checkout.cod.countryAllowlist.includes(input.shippingAddress.country) ||
-    totals.totalMinor > BigInt(storeConfig.checkout.cod.maximumByCurrency[cart.currency] ?? 0)
+    !config.checkout.cod.enabled ||
+    !config.checkout.cod.countryAllowlist.includes(input.shippingAddress.country) ||
+    totals.totalMinor > BigInt(config.checkout.cod.maximumByCurrency[cart.currency] ?? 0)
   )
     fail(422, 'COD_UNAVAILABLE', 'Cash on delivery is unavailable for this order.');
   return {
+    configRevision: config.revision,
     ...input,
     marketId: cart.marketId,
     currency: cart.currency,
@@ -288,14 +432,14 @@ commerce.post('/checkout/quotes', async (req, res) => {
     data: {
       cartId: cart.id,
       cartVersion: cart.version,
-      configRevision: storeConfig.revision,
+      configRevision: payload.configRevision,
       payload: json(payload),
       expiresAt: new Date(Date.now() + storeConfig.checkout.quoteMinutes * 60000),
     },
   });
   res.status(201).json({ data: { ...q, ...payload } });
 });
-commerce.post('/checkout/orders', async (req, res) => {
+commerce.post('/checkout/orders', requireUser, async (req, res) => {
   const { quoteId, paymentMethod } = z
     .object({ quoteId: id, paymentMethod: z.literal('COD') })
     .strict()
@@ -441,6 +585,26 @@ commerce.get('/orders', async (req, res) => {
       take: 100,
     }),
   });
+});
+commerce.get('/orders/lookup', requireUser, async (req, res) => {
+  const number = z
+    .string()
+    .trim()
+    .min(3)
+    .max(60)
+    .transform((value) => value.toUpperCase())
+    .parse(req.query.number);
+  const order = await prisma.order.findFirst({
+    where: { number, userId: req.shopSession!.userId! },
+    select: { id: true },
+  });
+  if (!order)
+    fail(
+      404,
+      'ORDER_NOT_FOUND',
+      'We could not find that order in your account. Check the order number.',
+    );
+  res.json({ data: { orderId: order.id } });
 });
 commerce.get('/orders/:id', async (req, res) => {
   const o = await prisma.order.findUnique({

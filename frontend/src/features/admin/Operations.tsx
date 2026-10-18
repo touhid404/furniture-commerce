@@ -1,20 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../app/Store.js';
-import { api, send } from '../../lib/api.js';
+import { api, send, ApiError } from '../../lib/api.js';
 import { formValues, useAction, useResource } from '../../lib/hooks.js';
 import type { Content, Coupon, Inventory, MediaAsset, ReturnRequest } from '../../lib/types.js';
+import { useAdminList, AdminListTools, AdminPagination } from '../../components/AdminList.js';
 import { Badge, Empty, Field, Loading, Notice, PageTitle } from '../../components/UI.js';
 export function InventoryPage() {
-  const { data, loading, error, reload } = useResource<Inventory[]>('/admin/inventory'),
+  const list = useAdminList<Inventory>('/admin/inventory'),
+    { data, loading, error, reload, setData } = list,
     action = useAction(),
     { notify } = useStore();
   return (
     <>
       <PageTitle eyebrow="Room for the good things" title="Inventory" />
+      <AdminListTools list={list} label="Inventory" />
       <Notice>{error || action.error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : (
         <div className="panel table-wrap">
           <table>
@@ -54,15 +57,29 @@ export function InventoryPage() {
                       className="inline-form"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        const d = formValues(e.currentTarget);
+                        const form = e.currentTarget,
+                          d = formValues(form);
                         action.run(async () => {
-                          await send(`/admin/inventory/${i.id}/adjustments`, {
-                            delta: Number(d.delta),
-                            reason: d.reason,
-                            version: i.version,
-                          });
-                          reload();
-                          notify('Stock adjusted.');
+                          try {
+                            const updated = await send<Inventory>(
+                              `/admin/inventory/${i.id}/adjustments`,
+                              {
+                                delta: Number(d.delta),
+                                reason: d.reason,
+                                version: i.version,
+                              },
+                            );
+                            setData(
+                              (rows) =>
+                                rows?.map((row) => (row.id === updated.id ? updated : row)) ?? null,
+                            );
+                            form.reset();
+                            notify('Stock adjusted.');
+                          } catch (error) {
+                            if (error instanceof ApiError && error.code === 'VERSION_CONFLICT')
+                              reload();
+                            throw error;
+                          }
                         });
                       }}
                     >
@@ -93,19 +110,22 @@ export function InventoryPage() {
           </table>
         </div>
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
 export function ReturnsPage() {
-  const { data, loading, error, reload } = useResource<ReturnRequest[]>('/admin/returns'),
+  const list = useAdminList<ReturnRequest>('/admin/returns'),
+    { data, loading, error, reload } = list,
     action = useAction(),
     { notify } = useStore();
   return (
     <>
       <PageTitle eyebrow="Thoughtful aftercare" title="Returns" />
+      <AdminListTools list={list} label="Returns" />
       <Notice>{error || action.error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : data?.length ? (
         data.map((r) => (
           <section key={r.id} className="panel form-panel">
@@ -172,22 +192,25 @@ export function ReturnsPage() {
       ) : (
         <Empty title="No return requests." />
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
 export function ContentPage() {
-  const { data, loading, error, reload } = useResource<Content[]>('/admin/content'),
+  const list = useAdminList<Content>('/admin/content'),
+    { data, loading, error, reload } = list,
     [edit, setEdit] = useState<Content | null>(null),
     action = useAction(),
     { notify } = useStore();
   return (
     <>
       <PageTitle eyebrow="The story of your store" title="Storefront content" />
+      <AdminListTools list={list} label="Content" />
       <Notice>{error || action.error}</Notice>
       <div className="admin-detail-grid">
         <section className="panel table-wrap">
-          {loading ? (
-            <Loading />
+          {loading && !data ? (
+            <Loading variant="table" />
           ) : (
             <table>
               <thead>
@@ -276,22 +299,25 @@ export function ContentPage() {
           </p>
         </section>
       </div>
+      <AdminPagination list={list} />
     </>
   );
 }
 export function CouponsPage() {
-  const { data, loading, error, reload } = useResource<Coupon[]>('/admin/coupons'),
+  const list = useAdminList<Coupon>('/admin/coupons'),
+    { data, loading, error, reload } = list,
     [edit, setEdit] = useState<Coupon | null>(null),
     action = useAction(),
     { config, notify, money } = useStore();
   return (
     <>
       <PageTitle eyebrow="A little extra welcome" title="Promotions" />
+      <AdminListTools list={list} label="Coupons" />
       <Notice>{error || action.error}</Notice>
       <div className="admin-detail-grid">
         <section className="panel table-wrap">
-          {loading ? (
-            <Loading />
+          {loading && !data ? (
+            <Loading variant="table" />
           ) : (
             <table>
               <thead>
@@ -411,6 +437,7 @@ export function CouponsPage() {
           </form>
         </section>
       </div>
+      <AdminPagination list={list} />
     </>
   );
 }
@@ -423,14 +450,16 @@ interface Review {
   published: boolean;
 }
 export function ReviewsPage() {
-  const { data, loading, error, reload } = useResource<Review[]>('/admin/reviews'),
+  const list = useAdminList<Review>('/admin/reviews'),
+    { data, loading, error, reload } = list,
     action = useAction();
   return (
     <>
       <PageTitle eyebrow="At home with your objects" title="Reviews" />
+      <AdminListTools list={list} label="Reviews" />
       <Notice>{error || action.error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : data?.length ? (
         data.map((r) => (
           <section className="panel form-panel" key={r.id}>
@@ -458,11 +487,13 @@ export function ReviewsPage() {
       ) : (
         <Empty title="No customer reviews yet." />
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
 export function MediaPage() {
-  const { data, loading, error, reload } = useResource<MediaAsset[]>('/admin/media'),
+  const list = useAdminList<MediaAsset>('/admin/media'),
+    { data, loading, error, reload } = list,
     action = useAction(),
     { notify } = useStore();
   return (
@@ -496,15 +527,16 @@ export function MediaPage() {
             Upload image
           </button>
         </form>
+        <AdminListTools list={list} label="Media" />
         <Notice>{error || action.error}</Notice>
       </section>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : (
         <div className="media-grid">
           {data?.map((m) => (
             <article className="panel" key={m.id}>
-              <img src={m.url} alt={m.name} loading="lazy" />
+              <img src={`${m.url}?size=card`} alt={m.name} loading="lazy" />
               <div>
                 <strong>{m.name}</strong>
                 <small>{Math.round(m.size / 1024)} KB</small>
@@ -528,7 +560,6 @@ export function MediaPage() {
                   disabled={action.busy}
                   onClick={() =>
                     action.run(async () => {
-                      if (!confirm('Remove this unused image?')) return;
                       await api(`/admin/media/${m.id}`, { method: 'DELETE' });
                       reload();
                     })
@@ -541,6 +572,7 @@ export function MediaPage() {
           ))}
         </div>
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
@@ -553,13 +585,15 @@ interface Audit {
   details: unknown;
 }
 export function AuditPage() {
-  const { data, loading, error } = useResource<Audit[]>('/admin/audit');
+  const list = useAdminList<Audit>('/admin/audit'),
+    { data, loading, error } = list;
   return (
     <>
       <PageTitle eyebrow="Accountable operations" title="Audit trail" />
+      <AdminListTools list={list} label="Audit" />
       <Notice>{error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : (
         <div className="panel table-wrap">
           <table>
@@ -591,6 +625,7 @@ export function AuditPage() {
           </table>
         </div>
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
@@ -604,7 +639,8 @@ interface Job {
   payload: unknown;
 }
 export function NotificationsPage() {
-  const { data, loading, error, reload } = useResource<Job[]>('/admin/notifications'),
+  const list = useAdminList<Job>('/admin/notifications'),
+    { data, loading, error, reload } = list,
     action = useAction();
   return (
     <>
@@ -612,9 +648,10 @@ export function NotificationsPage() {
       <p className="muted">
         Email delivery uses the separate outbox worker. Configure SMTP before a live launch.
       </p>
+      <AdminListTools list={list} label="Notifications" />
       <Notice>{error || action.error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : data?.length ? (
         <div className="panel table-wrap">
           <table>
@@ -665,67 +702,345 @@ export function NotificationsPage() {
       ) : (
         <Empty title="No notifications queued." />
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
 interface SettingsData {
-  config: unknown;
+  config: import('../../../../backend/src/config.js').StoreConfig;
   integrations: { email: boolean; payment: string; databaseBranch: string };
   message: string;
 }
 export function SettingsPage() {
-  const { data, loading, error } = useResource<SettingsData>('/admin/config'),
-    { user } = useStore();
+  const { data, loading, error, reload } = useResource<SettingsData>('/admin/config'),
+    { user, refreshConfig, notify } = useStore(),
+    action = useAction();
+  const [draft, setDraft] = useState<SettingsData['config'] | null>(null);
+  useEffect(() => {
+    if (data) setDraft(structuredClone(data.config));
+  }, [data]);
+  const change = (update: (value: SettingsData['config']) => void) =>
+    setDraft((old) => {
+      if (!old) return old;
+      const next = structuredClone(old);
+      update(next);
+      return next;
+    });
   return (
     <>
       <PageTitle eyebrow="Your store, considered" title="Settings" />
-      <Notice>{error}</Notice>
-      {loading ? (
-        <Loading />
-      ) : (
-        data && (
-          <>
+      <Notice>{error || action.error}</Notice>
+      {loading && !data ? (
+        <Loading variant="form" />
+      ) : data && draft ? (
+        <>
+          <section className="panel form-panel">
+            <h2>Services</h2>
+            <div className="service-grid">
+              <div>
+                <strong>Database</strong>
+                <Badge>Connected</Badge>
+                <small>{data.integrations.databaseBranch}</small>
+              </div>
+              <div>
+                <strong>Payments</strong>
+                <Badge>Cash on delivery</Badge>
+                <small>Online payment coming soon</small>
+              </div>
+              <div>
+                <strong>Email</strong>
+                <Badge>{data.integrations.email ? 'Configured' : 'Setup needed'}</Badge>
+              </div>
+              <div>
+                <strong>Admin security</strong>
+                <Badge>{user?.mfaEnabled ? 'MFA enabled' : 'MFA setup needed'}</Badge>
+                <Link to="/account/security">Manage security ↗</Link>
+              </div>
+            </div>
+          </section>
+          <form
+            className="settings-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              action.run(async () => {
+                await send(
+                  '/admin/config',
+                  { profile: draft, expectedRevision: data.config.revision },
+                  'PUT',
+                );
+                await refreshConfig();
+                reload();
+                notify('Store settings saved.');
+              });
+            }}
+          >
             <section className="panel form-panel">
-              <h2>Services</h2>
-              <div className="service-grid">
-                <div>
-                  <strong>PostgreSQL</strong>
-                  <Badge>Connected</Badge>
-                  <small>{data.integrations.databaseBranch}</small>
-                </div>
-                <div>
-                  <strong>Payments</strong>
-                  <Badge>Cash on delivery</Badge>
-                  <small>Online payment coming soon</small>
-                </div>
-                <div>
-                  <strong>Email</strong>
-                  <Badge>{data.integrations.email ? 'Configured' : 'Setup needed'}</Badge>
-                  <small>SMTP worker</small>
-                </div>
-                <div>
-                  <strong>Admin security</strong>
-                  <Badge>{user?.mfaEnabled ? 'MFA enabled' : 'MFA setup needed'}</Badge>
-                  <Link to="/account/security">Manage security ↗</Link>
-                </div>
+              <h2>Store details</h2>
+              <div className="form-grid">
+                <Field label="Store name">
+                  <input
+                    required
+                    maxLength={80}
+                    value={draft.brand.name}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.brand.name = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Support email">
+                  <input
+                    type="email"
+                    required
+                    value={draft.brand.supportEmail}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.brand.supportEmail = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Tagline">
+                  <input
+                    required
+                    maxLength={160}
+                    value={draft.brand.tagline}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.brand.tagline = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Timezone">
+                  <input
+                    required
+                    value={draft.timezone}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.timezone = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Default language">
+                  <select
+                    value={draft.defaultLocale}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.defaultLocale = e.target.value;
+                      })
+                    }
+                  >
+                    {draft.locales.map((locale) => (
+                      <option key={locale}>{locale}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Default selling region">
+                  <select
+                    value={draft.defaultMarketId}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.defaultMarketId = e.target.value;
+                      })
+                    }
+                  >
+                    {draft.markets
+                      .filter((m) => m.enabled)
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.country} · {m.currency}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              </div>
+              <p className="muted">
+                Regions use their own product prices. New countries and currencies require price
+                books and delivery setup.
+              </p>
+            </section>
+            <section className="panel form-panel">
+              <h2>Homepage</h2>
+              <div className="form-grid">
+                <Field label="Season label">
+                  <input
+                    value={draft.home.eyebrow}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.home.eyebrow = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Headline">
+                  <input
+                    required
+                    value={draft.home.headline}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.home.headline = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Featured product SKU">
+                  <input
+                    value={draft.home.featuredSku}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.home.featuredSku = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Delivery promise">
+                  <input
+                    value={draft.home.deliveryPromise}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.home.deliveryPromise = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
               </div>
             </section>
             <section className="panel form-panel">
-              <h2>Store variables</h2>
-              <p>{data.message}</p>
+              <h2>Delivery</h2>
               <p className="muted">
-                Edit config/stores/default.json and commit the reviewed profile. Validate with npm
-                run check:config before deploying. Environment credentials never belong in this
-                JSON.
+                Enter amounts in the smallest currency unit, for example 500 for $5.00 in USD.
               </p>
-              <details>
-                <summary>View store profile</summary>
-                <pre>{JSON.stringify(data.config, null, 2)}</pre>
-              </details>
+              {draft.shipping.rates.map((rate, index) => (
+                <fieldset className="settings-rate" key={`${rate.marketId}-${rate.id}`}>
+                  <legend>
+                    {rate.label} · {rate.currency}
+                  </legend>
+                  <div className="form-grid">
+                    <Field label={`Delivery fee (${rate.currency})`}>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={rate.feeMinor}
+                        onChange={(e) =>
+                          change((v) => {
+                            v.shipping.rates[index].feeMinor = Number(e.target.value);
+                          })
+                        }
+                      />
+                    </Field>
+                    <Field label={`Free delivery from (${rate.currency})`}>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={rate.freeOverMinor}
+                        onChange={(e) =>
+                          change((v) => {
+                            v.shipping.rates[index].freeOverMinor = Number(e.target.value);
+                          })
+                        }
+                      />
+                    </Field>
+                    <Field label="Minimum delivery days">
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={rate.estimatedDaysMin}
+                        onChange={(e) =>
+                          change((v) => {
+                            v.shipping.rates[index].estimatedDaysMin = Number(e.target.value);
+                          })
+                        }
+                      />
+                    </Field>
+                    <Field label="Maximum delivery days">
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={rate.estimatedDaysMax}
+                        onChange={(e) =>
+                          change((v) => {
+                            v.shipping.rates[index].estimatedDaysMax = Number(e.target.value);
+                          })
+                        }
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
+              ))}
             </section>
-          </>
-        )
-      )}
+            <section className="panel form-panel">
+              <h2>Orders and returns</h2>
+              <div className="form-grid">
+                <Field label="Maximum quantity per product">
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    max={99}
+                    value={draft.checkout.maxQuantityPerSku}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.checkout.maxQuantityPerSku = Number(e.target.value);
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Return window (days)">
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    value={draft.returns.windowDays}
+                    onChange={(e) =>
+                      change((v) => {
+                        v.returns.windowDays = Number(e.target.value);
+                      })
+                    }
+                  />
+                </Field>
+                {draft.currencies.map((currency) => (
+                  <Field
+                    key={currency.code}
+                    label={`Maximum COD order (${currency.code}, smallest unit)`}
+                  >
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={draft.checkout.cod.maximumByCurrency[currency.code] ?? 0}
+                      onChange={(e) =>
+                        change((v) => {
+                          v.checkout.cod.maximumByCurrency[currency.code] = Number(e.target.value);
+                        })
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
+            </section>
+            <div className="settings-actions">
+              <button
+                type="button"
+                className="button outline"
+                disabled={action.busy}
+                onClick={() => setDraft(structuredClone(data.config))}
+              >
+                Discard changes
+              </button>
+              <button className="button" disabled={action.busy}>
+                Save store settings
+              </button>
+            </div>
+          </form>
+        </>
+      ) : null}
     </>
   );
 }

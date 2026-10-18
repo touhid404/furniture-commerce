@@ -61,6 +61,19 @@ elif mode=='runs':
 elif mode=='jobs':
  data=call('GET',f'/actions/runs/{sys.argv[2]}/jobs')
  print(json.dumps([{'name':j['name'],'conclusion':j['conclusion'],'steps':[{'name':s['name'],'conclusion':s['conclusion']} for s in j['steps']]} for j in data['jobs']]))
+elif mode=='ready':
+ pr=call('GET','/pulls/'+sys.argv[2])
+ payload={'query':'mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}','variables':{'id':pr['node_id']}}
+ req=urllib.request.Request('https://api.github.com/graphql',method='POST',data=json.dumps(payload).encode(),headers={'Authorization':'Bearer '+token,'Content-Type':'application/json','User-Agent':'furniture-commerce-maintenance'})
+ with urllib.request.urlopen(req,timeout=40) as response:result=json.load(response)
+ if result.get('errors'):raise SystemExit('GitHub refused ready-for-review transition: '+result['errors'][0]['message'])
+ print(json.dumps(result['data']))
+elif mode=='merge':
+ result=call('PUT','/pulls/'+sys.argv[2]+'/merge',{'sha':sys.argv[3],'merge_method':'merge','commit_title':'Merge pull request #'+sys.argv[2]+': complete commerce storefront and admin'})
+ print(json.dumps(result))
+elif mode=='close-pr':
+ result=call('PATCH','/pulls/'+sys.argv[2],{'state':'closed','body':Path(sys.argv[3]).read_text()})
+ print(json.dumps({'number':result['number'],'state':result['state']}))
 elif mode=='issues':
  existing=call('GET','/issues?state=all&per_page=100')
  titles={i['title'] for i in existing}

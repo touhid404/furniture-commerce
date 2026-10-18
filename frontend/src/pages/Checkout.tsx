@@ -1,12 +1,13 @@
-import { useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, LockKeyhole, Truck } from 'lucide-react';
 import { useStore } from '../app/Store.js';
-import { api, send } from '../lib/api.js';
+import { ApiError, send } from '../lib/api.js';
 import { formValues, useAction } from '../lib/hooks.js';
-import type { Address, Cart, Order, Quote } from '../lib/types.js';
+import type { Address, Order, Quote } from '../lib/types.js';
+import { BagTotals, PromoCodeForm } from '../components/Promotion.js';
 import { CartLines } from '../components/StoreLayout.js';
-import { Empty, Field, Notice, PageTitle } from '../components/UI.js';
+import { Empty, Field, Loading, Notice, PageTitle } from '../components/UI.js';
 export function AddressFields({ country, address }: { country: string; address?: Address }) {
   return (
     <div className="form-grid">
@@ -79,8 +80,7 @@ export function AddressFields({ country, address }: { country: string; address?:
   );
 }
 export function Bag() {
-  const { cart, money, updateCart } = useStore(),
-    action = useAction();
+  const { cart } = useStore();
   return (
     <section className="standard-page">
       <PageTitle eyebrow="A considered collection" title="Your bag" />
@@ -93,43 +93,8 @@ export function Bag() {
           </section>
           <aside className="panel summary-panel">
             <h2>The good things</h2>
-            <div className="split">
-              <span>Subtotal</span>
-              <strong>{money(cart.subtotalMinor)}</strong>
-            </div>
-            <form
-              className="coupon-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const d = formValues(e.currentTarget);
-                action.run(async () =>
-                  updateCart(await send<Cart>('/cart/coupon', { code: d.code })),
-                );
-              }}
-            >
-              <input
-                name="code"
-                aria-label="Promotion code"
-                placeholder="Promotion code"
-                defaultValue={cart.couponCode ?? ''}
-              />
-              <button className="button outline" disabled={action.busy}>
-                Apply
-              </button>
-            </form>
-            {cart.couponCode && (
-              <button
-                className="text-link"
-                onClick={() =>
-                  action.run(async () =>
-                    updateCart(await api<Cart>('/cart/coupon', { method: 'DELETE' })),
-                  )
-                }
-              >
-                Remove {cart.couponCode}
-              </button>
-            )}
-            <Notice>{action.error}</Notice>
+            <BagTotals />
+            <PromoCodeForm />
             <p className="muted">
               Delivery and tax are confirmed at checkout. Your items are reserved when your order is
               placed.
@@ -147,40 +112,131 @@ export function Bag() {
   );
 }
 export function Checkout() {
-  const { config, user, cart, money, refresh } = useStore(),
+  const { config, user, authReady, cart, money, syncCart, updateCart, purchased } = useStore(),
     navigate = useNavigate(),
     action = useAction(),
     [quote, setQuote] = useState<Quote | null>(null),
+    [changes, setChanges] = useState(''),
+    [formRevision, setFormRevision] = useState(0),
+    [preparing, setPreparing] = useState(false),
+    [quoteError, setQuoteError] = useState(''),
+    form = useRef<HTMLFormElement>(null),
+    prepared = useRef({ version: 0, revision: -1 }),
+    reviewedItems = useRef<{ variantId: string; quantity: number }[]>([]),
+    reviewedVersion = useRef(0),
     key = useRef(crypto.randomUUID());
+  const actions = useRef({ syncCart, updateCart });
+  actions.current = { syncCart, updateCart };
   const market = config.markets.find((m) => m.id === cart.marketId)!;
-  async function review(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const d = formValues(e.currentTarget);
-    const { contactEmail, _payment, ...shippingAddress } = d;
-    await action.run(async () => {
-      setQuote(
-        await send<Quote>('/checkout/quotes', {
+  useEffect(() => {
+    setQuote(null);
+    if (!user || user.role === 'ADMIN' || !cart.items.length || !form.current?.checkValidity()) {
+      setPreparing(false);
+      return;
+    }
+    let active = true;
+    setPreparing(true);
+    setQuoteError('');
+    const timer = setTimeout(async () => {
+      try {
+        if (
+          prepared.current.version !== cart.version ||
+          prepared.current.revision !== formRevision
+        ) {
+          const fresh = await actions.current.syncCart();
+          if (!active) return;
+          const changed = fresh.items.some((item) => {
+            const old = cart.items.find((i) => i.variantId === item.variantId);
+            return (
+              !old ||
+              old.unitPriceMinor !== item.unitPriceMinor ||
+              !item.purchasable ||
+              item.quantity > item.available
+            );
+          });
+          prepared.current = { version: cart.version + 1, revision: formRevision };
+          if (changed)
+            setChanges(
+              'Prices or availability changed. Review the updated summary before confirming.',
+            );
+          actions.current.updateCart(fresh, cart.version);
+          return; // The new local version starts the quote phase with authoritative items.
+        }
+        const { contactEmail, _payment, ...shippingAddress } = formValues(form.current!);
+        const result = await send<Quote>('/checkout/quotes', {
           contactEmail,
           shippingAddress,
-          shippingMethodId: 'standard',
-        }),
-      );
-      key.current = crypto.randomUUID();
-    });
-  }
+          shippingMethodId:
+            config.delivery.find((rate) => rate.marketId === cart.marketId)?.id ?? '',
+        });
+        if (!active) return;
+        reviewedItems.current = cart.items.map((item) => ({
+          variantId: item.variantId,
+          quantity: item.quantity,
+        }));
+        reviewedVersion.current = cart.version;
+        key.current = crypto.randomUUID();
+        setQuote(result);
+        setPreparing(false);
+      } catch (error) {
+        if (active) {
+          setQuoteError(error instanceof Error ? error.message : 'We could not check your order.');
+          setPreparing(false);
+        }
+      }
+    }, 500);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [formRevision, cart.version, user?.id]);
+  useEffect(() => {
+    if (!quote) return;
+    const timer = setTimeout(
+      () => {
+        prepared.current.version = 0;
+        setFormRevision((v) => v + 1);
+      },
+      Math.max(1, new Date(quote.expiresAt).getTime() - Date.now() - 1000),
+    );
+    return () => clearTimeout(timer);
+  }, [quote]);
   async function order() {
     if (!quote) return;
+    if (cart.version !== reviewedVersion.current) {
+      setQuote(null);
+      action.setError('Your bag changed. Review the order again.');
+      return;
+    }
     await action.run(async () => {
-      const o = await send<Order>(
-        '/checkout/orders',
-        { quoteId: quote.id, paymentMethod: 'COD' },
-        'POST',
-        { 'Idempotency-Key': key.current },
-      );
-      await refresh();
-      navigate(`/orders/${o.id}?confirmed=1`);
+      try {
+        const o = await send<Order>(
+          '/checkout/orders',
+          { quoteId: quote.id, paymentMethod: 'COD' },
+          'POST',
+          { 'Idempotency-Key': key.current },
+        );
+        purchased(reviewedItems.current);
+        navigate(`/orders/${o.id}?confirmed=1`);
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          ['PRICE_CHANGED', 'QUOTE_EXPIRED', 'STOCK_CHANGED', 'COUPON_INVALID'].includes(error.code)
+        ) {
+          setQuote(null);
+          prepared.current.version = 0;
+          setFormRevision((v) => v + 1);
+          setChanges(
+            'Your order details changed. Review the refreshed total before confirming again.',
+          );
+        }
+        throw error;
+      }
     });
   }
+  if (!authReady) return <Loading />;
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
+  if (!user) return <Navigate to="/sign-in?next=/checkout" replace />;
   return (
     <section className="standard-page">
       <PageTitle eyebrow="Almost home" title="Checkout">
@@ -195,21 +251,17 @@ export function Checkout() {
         <div className="checkout-grid">
           <section className="panel form-panel">
             <div className="section-title">
-              <h2>{quote ? 'Ready to make it yours?' : 'Where should we send it?'}</h2>
-              <span className="step-pill">{quote ? '2' : '1'} / 2</span>
+              <h2>Where should we send it?</h2>
             </div>
-            {!user && (
-              <p className="muted">
-                Checking out as a guest.{' '}
-                <Link className="text-link" to="/sign-in?next=/checkout">
-                  Sign in instead
-                </Link>
-              </p>
-            )}
             <form
-              onSubmit={review}
+              ref={form}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void order();
+              }}
               onChange={() => {
-                if (quote) setQuote(null);
+                setQuote(null);
+                setFormRevision((v) => v + 1);
               }}
             >
               <Field label="Email address">
@@ -249,29 +301,54 @@ export function Checkout() {
                 <LockKeyhole size={16} />
                 {config.checkout.onlinePaymentLabel}
               </div>
+              <Notice>{changes}</Notice>
               <Notice>{action.error}</Notice>
-              {!quote && (
-                <button className="button wide" disabled={action.busy} type="submit">
-                  {action.busy ? 'Checking your order…' : 'Review order'}
-                  <ArrowRight size={16} />
+              <Notice>{quoteError}</Notice>
+              {preparing && (
+                <p className="muted" role="status">
+                  Checking delivery, stock and your final total…
+                </p>
+              )}
+              {!quote && !preparing && !quoteError && (
+                <p className="muted">Complete your delivery details to see the final total.</p>
+              )}
+              {quoteError && (
+                <button
+                  className="text-link"
+                  type="button"
+                  onClick={() => {
+                    prepared.current.version = 0;
+                    setFormRevision((v) => v + 1);
+                  }}
+                >
+                  Recheck totals
                 </button>
               )}
-            </form>
-            {quote && (
-              <div className="quote-confirm">
+              {quote && (
                 <Notice kind="success">
                   Delivery and prices confirmed. Pay {money(quote.totals.totalMinor)} on delivery.
                 </Notice>
-                <p>
-                  By placing your order, you agree to our <Link to="/policies/terms">terms</Link>{' '}
-                  and <Link to="/policies/privacy">privacy policy</Link>.
-                </p>
-                <button className="button wide" disabled={action.busy} onClick={order}>
-                  {action.busy ? 'Placing your order…' : 'Place cash on delivery order'}
-                  <Check size={16} />
-                </button>
-              </div>
-            )}
+              )}
+              <p className="muted">
+                By confirming, you agree to our{' '}
+                <Link to="/policies/terms" className="text-link">
+                  terms
+                </Link>{' '}
+                and{' '}
+                <Link to="/policies/privacy" className="text-link">
+                  privacy policy
+                </Link>
+                .
+              </p>
+              <button
+                className="button wide"
+                disabled={action.busy || preparing || !quote}
+                type="submit"
+              >
+                {action.busy ? 'Placing your order…' : 'Confirm order'}
+                <Check size={16} />
+              </button>
+            </form>
           </section>
           <aside className="panel summary-panel">
             <h2>Order summary</h2>
@@ -279,18 +356,27 @@ export function Checkout() {
               {cart.items.map((i) => (
                 <div className="split" key={i.id}>
                   <span>
+                    {(!i.purchasable || i.quantity > i.available) && (
+                      <strong>Unavailable quantity — </strong>
+                    )}
                     {i.name} <small>× {i.quantity}</small>
                   </span>
                   <span>{money(Number(i.unitPriceMinor) * i.quantity)}</span>
                 </div>
               ))}
             </div>
-            <div className="split">
-              <span>Subtotal</span>
-              <span>{money(cart.subtotalMinor)}</span>
-            </div>
+            {!quote && (
+              <>
+                <BagTotals />
+                <PromoCodeForm />
+              </>
+            )}
             {quote ? (
               <>
+                <div className="split">
+                  <span>Subtotal</span>
+                  <span>{money(quote.totals.subtotalMinor)}</span>
+                </div>
                 <div className="split">
                   <span>Discount</span>
                   <span>−{money(quote.totals.discountMinor)}</span>

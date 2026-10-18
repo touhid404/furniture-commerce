@@ -1,0 +1,447 @@
+{
+  "notice": "Sample catalog with real photographs, not a claim of actual merchant inventory. Images: https://unsplash.com/license. Replace with merchant-owned product photography before commercial launch.",
+  "categories": [
+    {
+      "slug": "seating",
+      "name": "Seating",
+      "sortOrder": 0
+    },
+    {
+      "slug": "lighting",
+      "name": "Lighting",
+      "sortOrder": 1
+    },
+    {
+      "slug": "tables",
+      "name": "Tables",
+      "sortOrder": 2
+    },
+    {
+      "slug": "textiles",
+      "name": "Textiles",
+      "sortOrder": 3
+    },
+    {
+      "slug": "ceramics",
+      "name": "Ceramics",
+      "sortOrder": 4
+    }
+  ],
+  "products": [
+    {
+      "name": "Bolle Lounge Chair",
+      "slug": "bolle-lounge-chair",
+      "sku": "BOLLE-SAGE",
+      "art": "chair",
+      "color": "#c4cfb4",
+      "background": "#e0e6d7",
+      "badge": "Bestseller",
+      "materials": "Solid oak, woven wool upholstery",
+      "dimensions": "W 78 × D 82 × H 76 cm",
+      "description": "A generous place to pause. Bolle pairs a softly curved silhouette with a solid oak frame, bringing a quiet sense of comfort to any corner.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 0,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "89000"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1503602642458-232111445657?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Linne Table Lamp",
+      "slug": "linne-table-lamp",
+      "sku": "LINNE-OAK",
+      "art": "lamp",
+      "color": "#c1a47d",
+      "background": "#f2e9c9",
+      "badge": "New",
+      "materials": "Turned oak, pleated linen shade",
+      "dimensions": "W 28 × D 28 × H 48 cm",
+      "description": "Warm light, honest materials. A sculptural oak base meets a finely pleated linen shade, creating a little pool of calm for your evening rituals.",
+      "categorySlug": "lighting",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 1,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "18900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "MÅN Pendant",
+      "slug": "man-pendant",
+      "sku": "MAN-IVORY",
+      "art": "pendant",
+      "color": "#eee9db",
+      "background": "#e0e7f1",
+      "badge": "",
+      "materials": "Rice paper, brushed brass",
+      "dimensions": "Ø 45 × H 42 cm",
+      "description": "Inspired by the gentle glow of the moon. This ribbed paper pendant brings soft, diffused light and a weightless presence above a table or beside a bed.",
+      "categorySlug": "lighting",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 2,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "24900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1540932239986-30128078f3c5?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Arc Side Table",
+      "slug": "arc-side-table",
+      "sku": "ARC-OAK",
+      "art": "table",
+      "color": "#b99872",
+      "background": "#e9e4da",
+      "badge": "",
+      "materials": "Responsibly sourced solid oak",
+      "dimensions": "Ø 48 × H 48 cm",
+      "description": "An everyday companion with a sculptural spirit. Rounded oak edges and a considered silhouette make room for your favourite books, a cup, and a quiet moment.",
+      "categorySlug": "tables",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 3,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "32900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Fold Linen Throw",
+      "slug": "fold-linen-throw",
+      "sku": "FOLD-OAT",
+      "art": "textile",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "100% washed European linen",
+      "dimensions": "130 × 180 cm",
+      "description": "A little texture, a little warmth. This naturally softened linen throw has a relaxed drape and a tactile weave that only gets better with everyday use.",
+      "categorySlug": "textiles",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 4,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "8900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Kora Ceramic Vase",
+      "slug": "kora-ceramic-vase",
+      "sku": "KORA-CHALK",
+      "art": "vase",
+      "color": "#c9bba5",
+      "background": "#e7dfd2",
+      "badge": "Hand finished",
+      "materials": "Glazed stoneware",
+      "dimensions": "Ø 16 × H 25 cm",
+      "description": "Made to hold a few stems or simply stand on its own. Kora is shaped in stoneware and finished with a soft, tactile glaze; small variations are part of its character.",
+      "categorySlug": "ceramics",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 5,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "5900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Noma Dining Chair",
+      "slug": "noma-dining-chair",
+      "sku": "NOMA-NATURAL",
+      "art": "chair",
+      "color": "#d5c8ab",
+      "background": "#ece7d9",
+      "badge": "",
+      "materials": "Ash frame, upholstered seat",
+      "dimensions": "W 51 × D 52 × H 78 cm",
+      "description": "A comfortable seat for conversations that last. Noma combines a light timber frame with a gently supportive seat, balancing simplicity with warmth.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 6,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "34900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1503602642458-232111445657?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Sora Two Seat Sofa",
+      "slug": "sora-two-seat-sofa",
+      "sku": "SORA-MOSS",
+      "art": "sofa",
+      "color": "#a8b39b",
+      "background": "#dee4d7",
+      "badge": "Made for slow days",
+      "materials": "Hardwood frame, woven recycled fabric",
+      "dimensions": "W 175 × D 86 × H 78 cm",
+      "description": "Room to settle in. Deep cushions, quiet proportions, and durable woven upholstery make Sora a welcoming centrepiece for everyday living.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 7,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "149000"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Aalto Reading Light",
+      "slug": "aalto-reading-light",
+      "sku": "AALTO-BRASS",
+      "art": "lamp",
+      "color": "#aaa07b",
+      "background": "#e9e8d8",
+      "badge": "",
+      "materials": "Brushed brass, linen",
+      "dimensions": "W 26 × D 26 × H 54 cm",
+      "description": "A thoughtful light for thoughtful spaces. A warm metal stem and a diffusing linen shade bring a gentle glow to your reading corner.",
+      "categorySlug": "lighting",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 8,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "21900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Nook Accent Chair",
+      "slug": "nook-accent-chair",
+      "sku": "NOOK-CREAM",
+      "art": "chair",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "See the product specifications before ordering.",
+      "description": "Nook Accent Chair brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 9,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "42900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Haven Lounge Chair",
+      "slug": "haven-lounge-chair",
+      "sku": "HAVEN-OAK",
+      "art": "chair",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "See the product specifications before ordering.",
+      "description": "Haven Lounge Chair brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 10,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "56900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Forma Coffee Table",
+      "slug": "forma-coffee-table",
+      "sku": "FORMA-OAK",
+      "art": "table",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "See the product specifications before ordering.",
+      "description": "Forma Coffee Table brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "tables",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 11,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "45900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Dune Three Seat Sofa",
+      "slug": "dune-three-seat-sofa",
+      "sku": "DUNE-SAND",
+      "art": "sofa",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "W 210 × D 90 × H 80 cm",
+      "description": "Dune Three Seat Sofa brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "seating",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 12,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "189000"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1567016432779-094069958ea5?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Sol Bedside Lamp",
+      "slug": "sol-bedside-lamp",
+      "sku": "SOL-LINEN",
+      "art": "lamp",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "See the product specifications before ordering.",
+      "description": "Sol Bedside Lamp brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "lighting",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 13,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "12900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Luma Pendant Light",
+      "slug": "luma-pendant-light",
+      "sku": "LUMA-BRASS",
+      "art": "pendant",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Natural materials with a hand finished surface",
+      "dimensions": "See the product specifications before ordering.",
+      "description": "Luma Pendant Light brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "lighting",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 14,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "28900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1540932239986-30128078f3c5?fit=crop&w=1200&q=82&fm=jpg"
+    },
+    {
+      "name": "Nest Linen Cushion",
+      "slug": "nest-linen-cushion",
+      "sku": "NEST-OAT",
+      "art": "textile",
+      "color": "#c6b89e",
+      "background": "#ece6db",
+      "badge": "",
+      "materials": "Washed linen, cotton lining",
+      "dimensions": "50 × 50 cm",
+      "description": "Nest Linen Cushion brings warm texture and considered proportions to everyday spaces. This sample catalog item demonstrates the normal product, inventory and image workflow.",
+      "categorySlug": "textiles",
+      "label": "Standard",
+      "care": "Wipe gently with a soft, dry cloth. Follow material specific care guidance.",
+      "onHand": 30,
+      "featuredRank": 15,
+      "prices": {
+        "reference-us": {
+          "currency": "USD",
+          "amountMinor": "4900"
+        }
+      },
+      "imageSource": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?fit=crop&w=1200&q=82&fm=jpg"
+    }
+  ],
+  "pages": [
+    {
+      "key": "shipping",
+      "title": "Delivery and shipping",
+      "body": "This sample store uses the delivery rates, supported country and estimated delivery times shown at checkout. Cash on delivery is collected when the order arrives. Contact the store before ordering if you need a delivery date confirmed."
+    },
+    {
+      "key": "returns",
+      "title": "Returns and care",
+      "body": "This sample store allows return requests within the configured return window after delivery. Start a request from your order page, keep the item in its original condition and contact the store for return arrangements. Review the final merchant policy before commercial use."
+    },
+    {
+      "key": "privacy",
+      "title": "Privacy",
+      "body": "Account, contact and order information is used to operate the store and fulfill orders. Browser storage retains the shopping bag on your device. Contact the store to request access, correction or deletion of personal data. This sample policy must be replaced with the merchant’s applicable privacy policy before launch."
+    },
+    {
+      "key": "terms",
+      "title": "Terms of service",
+      "body": "Prices, availability and delivery charges are checked on the server before order confirmation. Cash on delivery is the only active payment method; online payment is coming soon. Cancellation is available before shipment. This sample catalog and policy must be reviewed and replaced with the merchant’s actual terms before commercial launch."
+    }
+  ],
+  "coupons": [
+    {
+      "code": "WELCOME10",
+      "percent": 10,
+      "minimumMinor": "10000",
+      "currency": "USD",
+      "maxUses": 100
+    }
+  ]
+}

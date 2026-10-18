@@ -79,7 +79,7 @@ export function Dashboard() {
     );
     return () => clearInterval(t);
   }, [reload, config]);
-  if (loading && !d) return <Loading />;
+  if (loading && !d) return <Loading variant="dashboard" />;
   if (!d) return <Notice>{error}</Notice>;
   const categoryTotal = Object.values(d.categories).reduce((a, b) => a + b, 0),
     entries = Object.entries(d.categories);
@@ -261,7 +261,7 @@ export function Dashboard() {
               Updated
             </span>
           </div>
-          <small>{config.demo ? 'Includes fictional demo orders' : 'Latest customer orders'}</small>
+          <small>Latest customer orders</small>
           <div className="recent-list">
             {d.recent.map((o) => (
               <Link key={o.id} to={`/admin/orders/${o.id}`} className="recent-order">

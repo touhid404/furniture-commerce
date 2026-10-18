@@ -26,6 +26,21 @@ export function validateStoreConfig(input: unknown): StoreConfig {
   if (!validate(input))
     throw new Error(`Invalid store configuration: ${ajv.errorsText(validate.errors)}`);
   const value = input;
+  if (
+    !value.brand.name.trim() ||
+    value.brand.name.length > 80 ||
+    !value.brand.tagline.trim() ||
+    value.brand.tagline.length > 160
+  )
+    throw new Error('Store name and tagline are required and must fit the storefront');
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.brand.supportEmail) ||
+    value.brand.supportEmail.length > 254
+  )
+    throw new Error('Enter a valid support email');
+  if (value.checkout.maxQuantityPerSku > 100)
+    throw new Error('Maximum product quantity cannot exceed 100');
+
   const unique = (values: string[]) => new Set(values).size === values.length;
   if (
     !unique(value.markets.map((x) => x.id)) ||
@@ -74,6 +89,8 @@ export function validateStoreConfig(input: unknown): StoreConfig {
   ]) {
     if (!currencies.has(key)) throw new Error('Money settings reference an unknown currency');
   }
+  if (!unique(value.shipping.rates.map((rate) => rate.marketId + ':' + rate.id)))
+    throw new Error('Delivery methods must be unique in each market');
   for (const rate of value.shipping.rates) {
     const market = value.markets.find((x) => x.id === rate.marketId);
     if (
@@ -92,6 +109,8 @@ export function validateStoreConfig(input: unknown): StoreConfig {
       throw new Error('Production requires shipping and tax setup');
     if (value.checkout.cod.enabled && !value.checkout.cod.countryAllowlist.length)
       throw new Error('Production COD requires delivery countries');
+    if (!process.env.PUBLIC_APP_URL?.startsWith('https://'))
+      throw new Error('Production requires a public HTTPS application origin');
     if (!process.env.SESSION_SECRET || !process.env.MFA_ENCRYPTION_KEY)
       throw new Error('Production requires session and MFA encryption secrets');
   }
@@ -107,7 +126,11 @@ const rawConfig: unknown = JSON.parse(
     'utf8',
   ),
 );
-export const storeConfig = validateStoreConfig(rawConfig);
+export let storeConfig = validateStoreConfig(rawConfig);
+
+export function applyStoreConfig(profile: StoreConfig) {
+  storeConfig = profile;
+}
 
 export function publicStoreConfig() {
   const c = storeConfig;
@@ -127,15 +150,24 @@ export function publicStoreConfig() {
     messages: c.messages,
     checkout: {
       guestEnabled: c.checkout.guestEnabled,
+      maxQuantityPerSku: c.checkout.maxQuantityPerSku,
       codEnabled: c.checkout.cod.enabled,
       onlinePaymentLabel:
         c.messages[c.defaultLocale]?.onlinePaymentComingSoon ?? 'Online payment coming soon',
     },
     returns: c.returns,
+    delivery: c.shipping.rates,
     dashboard: { pollSeconds: c.dashboard.pollSeconds },
     demo: c.mode === 'demo' && c.features.demoAdmin,
     capabilities: {
       commerceReady: true,
+      demoSignIn: c.mode === 'demo' && c.features.demoAdmin && process.env.DEMO_SEED === 'true',
+      testWritesAllowed:
+        storeConfig.mode === 'demo' &&
+        !!process.env.NEON_BRANCH?.startsWith('test-') &&
+        !new URL(process.env.DATABASE_URL ?? 'postgresql://invalid').hostname.startsWith(
+          'ep-quiet-frog-b5tcammn',
+        ),
       cardConfigured: c.checkout.card.provider !== 'unconfigured',
       shippingConfigured: c.shipping.configured,
     },

@@ -1,12 +1,19 @@
+import { ActionConfirmation } from '../components/ActionConfirmation.js';
 import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider, useStore } from './Store.js';
 import { StoreLayout, Toast } from '../components/StoreLayout.js';
 import { Loading } from '../components/UI.js';
 import { Home, ProductDetail, Shop } from '../pages/Catalog.js';
-import { Bag, Checkout } from '../pages/Checkout.js';
-import { SignIn, AccessPage } from '../pages/Auth.js';
-import { Account, OrderDetail, Security } from '../pages/Account.js';
+const Bag = lazy(() => import('../pages/Checkout.js').then((m) => ({ default: m.Bag })));
+const Checkout = lazy(() => import('../pages/Checkout.js').then((m) => ({ default: m.Checkout })));
+const SignIn = lazy(() => import('../pages/Auth.js').then((m) => ({ default: m.SignIn })));
+const AccessPage = lazy(() => import('../pages/Auth.js').then((m) => ({ default: m.AccessPage })));
+const Account = lazy(() => import('../pages/Account.js').then((m) => ({ default: m.Account })));
+const OrderDetail = lazy(() =>
+  import('../pages/Account.js').then((m) => ({ default: m.OrderDetail })),
+);
+const Security = lazy(() => import('../pages/Account.js').then((m) => ({ default: m.Security })));
 import { Policy, Contact, NotFound } from '../pages/Content.js';
 const AdminLayout = lazy(() => import('../features/admin/AdminLayout.js'));
 const Dashboard = lazy(() =>
@@ -87,6 +94,7 @@ export function App() {
         <StoreProvider>
           <Metadata />
           <Toast />
+          <ActionConfirmation />
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route element={<StoreLayout />}>

@@ -32,11 +32,12 @@ code=doc.styles.add_style('Code Block',1);code.font.name='Courier New';code.font
 code.paragraph_format.space_after=Pt(1);code.paragraph_format.line_spacing=1.0
 header=section.header.paragraphs[0];header.text='Furniture commerce platform';header.style='Normal';header.runs[0].font.size=Pt(8)
 footer=section.footer.paragraphs[0];footer.alignment=WD_ALIGN_PARAGRAPH.RIGHT
-footer.add_run('Version 0.1  |  ')
+footer.add_run('Version 1.0  |  ')
 fld=OxmlElement('w:fldSimple');fld.set(qn('w:instr'),'PAGE');footer._p.append(fld)
 for r in footer.runs:r.font.size=Pt(8)
 
 def clean(text):
+ text=re.sub(r'^>\s*','',text)
  text=re.sub(r'`([^`]+)`',r'\1',text)
  text=re.sub(r'\*\*([^*]+)\*\*',r'\1',text)
  text=re.sub(r'\[([^\]]+)\]\(([^)]+)\)',r'\1 (\2)',text)
@@ -88,11 +89,11 @@ def table(rows):
 
 # Cover
 p=doc.add_paragraph('Furniture commerce platform specification','Title')
-doc.add_paragraph('Storefront admin and production implementation','Subtitle')
-doc.add_paragraph('Version 0.1\n18 October 2026')
+doc.add_paragraph('Storefront, admin and operations','Subtitle')
+doc.add_paragraph('Version 1.0\n18 October 2026')
 doc.add_paragraph('This specification defines a furniture commerce platform with a customer storefront and a main admin experience, using React, Express, PostgreSQL and Prisma. The supplied video establishes the visible design; the remaining workflows extend that design into a complete production system.')
-doc.add_paragraph('The owner confirmed reusable JSON store settings, online card payments and cash on delivery, full production scope, and professional maintenance in a private GitHub repository. The Neon connectivity foundation is implemented and verified; commerce and admin features are the next development phases.')
-table([['Project choice','Baseline'],['Design reference','23 second furniture commerce video with four visible screen types'],['Application stack','React and Express with Prisma and PostgreSQL on Neon'],['Owner configuration','Versioned JSON profiles with market currency locale and theme validation'],['Source repository','Private GitHub repository touhid404/furniture-commerce'],['Current implementation','Buildable connectivity foundation with read-only database verification']])
+doc.add_paragraph('The owner confirmed reusable JSON store settings, cash on delivery with online payments deferred, full commerce scope, and professional maintenance in a private GitHub repository. The application includes the storefront, customer checkout, administrator workflows, Neon database/object storage and measured acceptance. Merchant assets/policies, strong production administrator credentials, public hosting and SMTP activation remain operator setup.')
+table([['Project choice','Baseline'],['Design reference','23 second furniture commerce video with four visible screen types'],['Application stack','React and Express with Prisma and PostgreSQL on Neon'],['Owner configuration','Versioned JSON profiles with market currency locale and theme validation'],['Source repository','Private GitHub repository touhid404/furniture-commerce'],['Current implementation','React/Express commerce, guest bag, COD checkout, admin management and Neon storage']])
 doc.add_paragraph('Use this document with the maintained Markdown specifications, JSON examples and OpenAPI contract in the repository. The design evidence is indexed by timestamp. Analysis images and the source video remain local and are not included in this document or pushed to GitHub.')
 doc.add_page_break()
 doc.add_heading('Contents',1)

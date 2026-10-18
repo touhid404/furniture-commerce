@@ -6,6 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { storeConfig } from '../config.js';
+import { allowedRequestOrigin } from '../services/security.js';
 import { digest, fail, atomic, email, addressSchema, id, ApiError } from '../services/core.js';
 import type { Session, User } from '../generated/prisma/client.js';
 
@@ -25,8 +26,16 @@ export const safeUser = (u: User) => ({
   role: u.role,
   emailVerified: !!u.emailVerifiedAt,
   mfaEnabled: !!u.totpSecret,
+  requiresPasswordChange: u.requiresPasswordChange,
 });
 export async function sessionMiddleware(req: Request, _res: Response, next: NextFunction) {
+  if (
+    req.method === 'GET' &&
+    /^\/api\/v1\/(config|categories|products(?:\/[^/]+)?|product-prices|content\/[^/]+)$/.test(
+      req.originalUrl.split('?')[0],
+    )
+  )
+    return next();
   const token = req.cookies?.[cookieName];
   if (typeof token === 'string' && token.length === 64) {
     const s = await prisma.session.findUnique({
@@ -67,15 +76,8 @@ export async function createSession(
 export async function ensureSession(req: Request, res: Response) {
   return req.shopSession ?? createSession(req, res);
 }
-export function requireUser(req: Request, _res: Response, next: NextFunction) {
-  if (!req.shopSession?.user) fail(401, 'AUTH_REQUIRED', 'Please sign in to continue.');
-  next();
-}
-export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
-  if (req.shopSession?.user?.role !== 'ADMIN')
-    fail(403, 'FORBIDDEN', 'Administrator access is required.');
-  next();
-}
+export { requireUser, requireAdmin } from '../middleware/authorization.js';
+import { requireUser } from '../middleware/authorization.js';
 export function csrf(req: Request, _res: Response, next: NextFunction) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const token = req.get('X-CSRF-Token');
@@ -88,71 +90,66 @@ export function csrf(req: Request, _res: Response, next: NextFunction) {
   )
     fail(403, 'CSRF_INVALID', 'Your session has changed. Refresh and try again.');
   const origin = req.get('origin');
-  if (origin) {
-    let host: string;
-    try {
-      host = new URL(origin).host;
-    } catch {
-      fail(403, 'ORIGIN_INVALID', 'Request origin is not allowed.');
-    }
-    if (host !== req.get('host')) fail(403, 'ORIGIN_INVALID', 'Request origin is not allowed.');
-  }
+  if (
+    origin &&
+    !allowedRequestOrigin(
+      origin,
+      process.env.PUBLIC_APP_URL ?? 'http://127.0.0.1:3001',
+      `${req.protocol}://${req.get('host')}`,
+      storeConfig.mode !== 'production',
+    )
+  )
+    fail(403, 'ORIGIN_INVALID', 'Request origin is not allowed.');
   next();
 }
 async function finishLogin(req: Request, res: Response, user: User) {
   const old = req.shopSession;
-  await atomic(async (tx) => {
-    const guest = old
-      ? await tx.cart.findUnique({
-          where: { sessionId: old.id },
-          include: { items: true },
-        })
-      : null;
-    const cart = await tx.cart.upsert({
-      where: { userId: user.id },
-      create: {
-        userId: user.id,
-        marketId: guest?.marketId ?? storeConfig.defaultMarketId,
-        currency: guest?.currency ?? storeConfig.currencies[0].code,
-      },
-      update: {},
-    });
-    if (guest) {
-      for (const item of guest.items) {
-        const existing = await tx.cartItem.findUnique({
-          where: {
-            cartId_variantId: { cartId: cart.id, variantId: item.variantId },
-          },
-        });
-        await tx.cartItem.upsert({
-          where: {
-            cartId_variantId: { cartId: cart.id, variantId: item.variantId },
-          },
-          create: {
-            cartId: cart.id,
-            variantId: item.variantId,
-            quantity: item.quantity,
-          },
-          update: {
-            quantity: Math.min(
-              storeConfig.checkout.maxQuantityPerSku,
-              item.quantity + (existing?.quantity ?? 0),
-            ),
-          },
+  const guest = old
+    ? await prisma.cart.findUnique({ where: { sessionId: old.id }, include: { items: true } })
+    : null;
+  if (guest)
+    await atomic(async (tx) => {
+      const cart = await tx.cart.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          marketId: guest?.marketId ?? storeConfig.defaultMarketId,
+          currency: guest?.currency ?? storeConfig.currencies[0].code,
+        },
+        update: {},
+      });
+      if (guest) {
+        for (const item of guest.items) {
+          const existing = await tx.cartItem.findUnique({
+            where: {
+              cartId_variantId: { cartId: cart.id, variantId: item.variantId },
+            },
+          });
+          await tx.cartItem.upsert({
+            where: {
+              cartId_variantId: { cartId: cart.id, variantId: item.variantId },
+            },
+            create: {
+              cartId: cart.id,
+              variantId: item.variantId,
+              quantity: item.quantity,
+            },
+            update: {
+              quantity: Math.min(
+                storeConfig.checkout.maxQuantityPerSku,
+                item.quantity + (existing?.quantity ?? 0),
+              ),
+            },
+          });
+        }
+        await tx.cart.delete({ where: { id: guest.id } });
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: { version: { increment: 1 } },
         });
       }
-      await tx.cart.delete({ where: { id: guest.id } });
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: { version: { increment: 1 } },
-      });
-    }
-    if (old)
-      await tx.session.update({
-        where: { id: old.id },
-        data: { expiresAt: new Date() },
-      });
-  });
+    });
+  if (old) await prisma.session.update({ where: { id: old.id }, data: { expiresAt: new Date() } });
   const s = await createSession(req, res, user.id, !!user.totpSecret);
   res.json({ data: { user: safeUser(user), csrfToken: s.csrfToken } });
 }
@@ -197,10 +194,31 @@ auth.post('/register', authLimit, async (req, res) => {
   await finishLogin(req, res, u);
 });
 auth.post('/login', authLimit, async (req, res) => {
-  const data = credentials.parse(req.body);
-  const u = await prisma.user.findUnique({ where: { email: data.email } });
+  const data = credentials
+    .extend({
+      email: z
+        .string()
+        .trim()
+        .min(1)
+        .max(254)
+        .transform((v) => v.toLowerCase()),
+      password: z.string().min(1).max(128),
+    })
+    .parse(req.body);
+  const u = await prisma.user.findFirst({
+    where: { OR: [{ email: data.email }, { username: data.email }] },
+  });
   if (!u || u.disabled || !(await verify(u.passwordHash, data.password)))
     fail(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+  if (
+    u.requiresPasswordChange &&
+    (storeConfig.mode === 'production' || process.env.NODE_ENV === 'production')
+  )
+    fail(
+      403,
+      'PASSWORD_CHANGE_REQUIRED',
+      'Replace the development administrator password using admin:create before production sign in.',
+    );
   if (u.totpSecret && (!data.code || !validTotp(decrypt(u.totpSecret), data.code)))
     fail(401, 'MFA_REQUIRED', 'Enter your current authenticator code.');
   await finishLogin(req, res, u);
@@ -273,7 +291,10 @@ auth.post('/reset-password', authLimit, async (req, res) => {
     });
     if (!t || t.purpose !== 'RESET' || !t.userId || t.usedAt || t.expiresAt < new Date())
       fail(422, 'TOKEN_INVALID', 'This link has expired or was used.');
-    await tx.user.update({ where: { id: t.userId }, data: { passwordHash } });
+    await tx.user.update({
+      where: { id: t.userId },
+      data: { passwordHash, requiresPasswordChange: false },
+    });
     await tx.session.updateMany({
       where: { userId: t.userId },
       data: { expiresAt: new Date() },

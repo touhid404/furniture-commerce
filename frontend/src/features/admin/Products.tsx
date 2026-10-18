@@ -5,11 +5,12 @@ import { useStore } from '../../app/Store.js';
 import { api, send } from '../../lib/api.js';
 import { formValues, useAction, useResource } from '../../lib/hooks.js';
 import type { Category, Product } from '../../lib/types.js';
+import { useAdminList, AdminListTools, AdminPagination } from '../../components/AdminList.js';
 import { ProductArt } from '../../components/ProductArt.js';
 import { Badge, Empty, Field, Loading, Notice, PageTitle } from '../../components/UI.js';
 export function Products() {
-  const [q, setQ] = useState(''),
-    { data, loading, error } = useResource<Product[]>('/admin/products'),
+  const list = useAdminList<Product>('/admin/products'),
+    { data, loading, error } = list,
     { money } = useStore();
   return (
     <>
@@ -19,18 +20,10 @@ export function Products() {
           Add product
         </Link>
       </PageTitle>
-      <div className="admin-toolbar">
-        <input
-          aria-label="Filter products"
-          placeholder="Find a product…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <span className="muted">{data?.length ?? 0} objects</span>
-      </div>
+      <AdminListTools list={list} label="Products" />
       <Notice>{error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : data?.length ? (
         <div className="panel table-wrap">
           <table>
@@ -45,49 +38,48 @@ export function Products() {
               </tr>
             </thead>
             <tbody>
-              {data
-                .filter((p) => p.name.toLowerCase().includes(q.toLowerCase()))
-                .map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <Link className="product-table-name" to={`/admin/products/${p.id}`}>
-                        <span style={{ background: p.background }}>
-                          <ProductArt {...p} />
-                        </span>
-                        <div>
-                          <strong>{p.name}</strong>
-                          <small>{p.variants[0]?.sku}</small>
-                        </div>
-                      </Link>
-                    </td>
-                    <td>
-                      <Badge>{p.status}</Badge>
-                    </td>
-                    <td>{p.category.name}</td>
-                    <td>
-                      {(p.variants[0]?.inventory?.onHand ?? 0) -
-                        (p.variants[0]?.inventory?.allocated ?? 0)}{' '}
-                      available
-                    </td>
-                    <td>
-                      {money(
-                        p.variants[0]?.prices[0]?.amountMinor ?? 0,
-                        p.variants[0]?.prices[0]?.currency,
-                      )}
-                    </td>
-                    <td>
-                      <Link aria-label={`Edit ${p.name}`} to={`/admin/products/${p.id}`}>
-                        <ArrowUpRight size={17} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+              {data.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <Link className="product-table-name" to={`/admin/products/${p.id}`}>
+                      <span style={{ background: p.background }}>
+                        <ProductArt {...p} />
+                      </span>
+                      <div>
+                        <strong>{p.name}</strong>
+                        <small>{p.variants[0]?.sku}</small>
+                      </div>
+                    </Link>
+                  </td>
+                  <td>
+                    <Badge>{p.status}</Badge>
+                  </td>
+                  <td>{p.category.name}</td>
+                  <td>
+                    {(p.variants[0]?.inventory?.onHand ?? 0) -
+                      (p.variants[0]?.inventory?.allocated ?? 0)}{' '}
+                    available
+                  </td>
+                  <td>
+                    {money(
+                      p.variants[0]?.prices[0]?.amountMinor ?? 0,
+                      p.variants[0]?.prices[0]?.currency,
+                    )}
+                  </td>
+                  <td>
+                    <Link aria-label={`Edit ${p.name}`} to={`/admin/products/${p.id}`}>
+                      <ArrowUpRight size={17} />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       ) : (
         <Empty title="Your collection starts here." />
       )}
+      <AdminPagination list={list} />
     </>
   );
 }
@@ -95,11 +87,11 @@ export function ProductEditor() {
   const { id } = useParams(),
     isNew = id === 'new',
     resource = useResource<Product>(isNew ? null : `/admin/products/${id}`),
-    cats = useResource<Category[]>('/admin/categories'),
+    cats = useResource<Category[]>('/admin/categories/options'),
     action = useAction(),
     navigate = useNavigate(),
     { notify, config } = useStore();
-  if ((!isNew && resource.loading) || cats.loading) return <Loading />;
+  if ((!isNew && resource.loading) || cats.loading) return <Loading variant="form" />;
   if (!isNew && !resource.data) return <Notice>{resource.error}</Notice>;
   const p = resource.data,
     v = p?.variants[0];
@@ -283,7 +275,6 @@ export function ProductEditor() {
               disabled={action.busy}
               onClick={() =>
                 action.run(async () => {
-                  if (!confirm('Archive this product?')) return;
                   await send(`/admin/products/${id}/archive`);
                   resource.reload();
                   notify('Product archived.');
@@ -402,18 +393,20 @@ function PriceBooks({ product, onSaved }: { product: Product; onSaved: () => voi
   );
 }
 export function Categories() {
-  const { data, loading, error, reload } = useResource<Category[]>('/admin/categories'),
+  const list = useAdminList<Category>('/admin/categories'),
+    { data, loading, error, reload } = list,
     [edit, setEdit] = useState<Category | null>(null),
     action = useAction(),
     { notify } = useStore();
   return (
     <>
       <PageTitle eyebrow="A place for every object" title="Categories" />
+      <AdminListTools list={list} label="Categories" />
       <Notice>{error || action.error}</Notice>
       <div className="admin-detail-grid">
         <section className="panel table-wrap">
-          {loading ? (
-            <Loading />
+          {loading && !data ? (
+            <Loading variant="table" />
           ) : (
             <table>
               <thead>
@@ -443,7 +436,6 @@ export function Categories() {
                         disabled={action.busy}
                         onClick={() =>
                           action.run(async () => {
-                            if (!confirm('Delete this empty category?')) return;
                             await api(`/admin/categories/${c.id}`, { method: 'DELETE' });
                             reload();
                             notify('Category deleted.');
@@ -513,6 +505,7 @@ export function Categories() {
           </form>
         </section>
       </div>
+      <AdminPagination list={list} />
     </>
   );
 }

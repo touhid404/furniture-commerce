@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
 import {
   Box,
@@ -19,7 +20,7 @@ import {
 import { useStore } from '../../app/Store.js';
 import { Logo } from '../../components/StoreLayout.js';
 import { useAction } from '../../lib/hooks.js';
-import { Notice } from '../../components/UI.js';
+import { Loading, Notice } from '../../components/UI.js';
 const links = [
   ['', 'Overview', LayoutGrid],
   ['orders', 'Orders', ClipboardList],
@@ -36,8 +37,9 @@ const links = [
   ['settings', 'Settings', Settings],
 ] as const;
 export default function AdminLayout() {
-  const { user, config, logout } = useStore(),
+  const { user, authReady, config, logout } = useStore(),
     action = useAction();
+  if (!authReady) return <Loading />;
   if (!user) return <Navigate to="/sign-in?next=/admin" replace />;
   if (user.role !== 'ADMIN') return <Navigate to="/account" replace />;
   if (!config.demo && !user.mfaEnabled) return <Navigate to="/account/security" replace />;
@@ -49,7 +51,6 @@ export default function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <Logo />
-          {config.demo && <span className="demo-label">Demo</span>}
         </div>
         <nav aria-label="Admin navigation">
           {links.map(([path, label, Icon]) => (
@@ -90,7 +91,9 @@ export default function AdminLayout() {
         </div>
       </aside>
       <main id="admin-main" className="admin-main">
-        <Outlet />
+        <Suspense fallback={<Loading variant="table" />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

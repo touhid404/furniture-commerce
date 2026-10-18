@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { request, type Envelope } from './api.js';
+import { ActionCancelled } from './confirmation.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Envelope } from './api.js';
+import { resource } from './resource-cache.js';
 export function useResource<T>(path: string | null) {
   const [data, setData] = useState<T | null>(null),
     [error, setError] = useState(''),
@@ -9,32 +11,35 @@ export function useResource<T>(path: string | null) {
   const priorPath = useRef(path);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
     if (!path) {
       setLoading(false);
       return;
     }
     setLoading(true);
     setError('');
-    if (priorPath.current !== path) {
+    if (priorPath.current !== path && path.split('?')[0] !== priorPath.current?.split('?')[0]) {
       setData(null);
       setMeta(undefined);
     }
     priorPath.current = path;
-    request<T>(path, { signal: controller.signal })
+    // Shared in-flight requests survive StrictMode cleanup; only the current subscriber may update UI.
+    resource<T>(path, version > 0)
       .then((body) => {
-        if (!controller.signal.aborted) {
+        if (active) {
           setData(body.data);
           setMeta(body.meta);
         }
       })
-      .catch((e: Error) => {
-        if (!controller.signal.aborted) setError(e.message);
+      .catch((error) => {
+        if (active) setError(error.message);
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (active) setLoading(false);
       });
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, [path, version]);
   return { data, setData, meta, error, loading, reload };
 }
@@ -48,7 +53,8 @@ export function useAction() {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Please try again.');
+      if (!(e instanceof ActionCancelled))
+        setError(e instanceof Error ? e.message : 'Please try again.');
     } finally {
       setBusy(false);
     }

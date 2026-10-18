@@ -7,6 +7,7 @@ export interface User {
   role: 'ADMIN' | 'CUSTOMER';
   emailVerified: boolean;
   mfaEnabled: boolean;
+  requiresPasswordChange: boolean;
 }
 export interface Category {
   id: string;

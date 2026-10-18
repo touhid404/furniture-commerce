@@ -1,6 +1,8 @@
 model User {
   id String @id @default(uuid()) @db.Uuid
   email String @unique
+  username String? @unique
+  requiresPasswordChange Boolean @default(false)
   name String
   passwordHash String
   role Role @default(CUSTOMER)

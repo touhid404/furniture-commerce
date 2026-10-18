@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flyToCart } from '../lib/fly-to-cart.js';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
+  Banknote,
   ArrowDown,
   ArrowRight,
   ArrowUpRight,
@@ -18,10 +20,11 @@ import { Empty, Field, Loading, Notice } from '../components/UI.js';
 export function ProductCard({ product: p }: { product: Product }) {
   const { money, add } = useStore(),
     action = useAction(),
+    image = useRef<HTMLElement>(null),
     v = p.variants[0],
     navigate = useNavigate();
   return (
-    <article className="product-card">
+    <article className="product-card" ref={image}>
       <div className="product-visual" style={{ background: p.background }}>
         <Link to={`/products/${p.slug}`} className="product-picture" aria-label={`View ${p.name}`}>
           <ProductArt {...p} />
@@ -34,7 +37,12 @@ export function ProductCard({ product: p }: { product: Product }) {
           }
           disabled={action.busy || !v?.available}
           onClick={() =>
-            p.variants.length > 1 ? navigate(`/products/${p.slug}`) : action.run(() => add(v.id))
+            p.variants.length > 1
+              ? navigate(`/products/${p.slug}`)
+              : action.run(async () => {
+                  await add(p, v.id);
+                  flyToCart(image.current?.querySelector('.product-art') ?? null);
+                })
           }
         >
           {action.busy ? '…' : <Plus size={20} />}
@@ -62,12 +70,12 @@ export function ProductCard({ product: p }: { product: Product }) {
   );
 }
 export function Home() {
-  const { config, market, money, add } = useStore(),
-    { data, loading, error } = useResource<Product[]>(
+  const { config, categories, market, money, add } = useStore(),
+    { data, meta, loading, error } = useResource<Product[]>(
       `/products?marketId=${encodeURIComponent(market)}`,
     ),
     action = useAction();
-  if (loading) return <Loading />;
+  if (loading && !data) return <Loading variant="home" />;
   if (error) return <Notice>{error}</Notice>;
   const featured =
     data?.find((p) => p.variants.some((v) => v.sku === config.home.featuredSku)) ?? data?.[0];
@@ -77,7 +85,7 @@ export function Home() {
         <div className="hero-copy panel">
           <span className="eyebrow">
             <i className="season-dot" />
-            {config.home.eyebrow} · {data?.length} pieces just landed
+            {config.home.eyebrow} · {meta?.total ?? data?.length} pieces just landed
           </span>
           <h1>{config.home.headline}</h1>
           <div className="hero-copy-bottom">
@@ -102,9 +110,12 @@ export function Home() {
           </div>
         </Link>
         <Link className="delivery-card panel" to="/policies/shipping">
-          <span className="eyebrow">A little reassurance</span>
+          <span className="eyebrow">Delivery</span>
           <Truck size={28} strokeWidth={1} />
-          <h2>Good things, delivered.</h2>
+          <h2>
+            Free over{' '}
+            {money(config.delivery.find((r) => r.marketId === market)?.freeOverMinor ?? 0)}
+          </h2>
           <p>{config.home.deliveryPromise}</p>
           <div className="delivery-line">
             <span>Made for your everyday.</span>
@@ -116,7 +127,7 @@ export function Home() {
             <span className="eyebrow">{featured.badge || 'Considered comfort'}</span>
             <h2>{featured.name}</h2>
             <Link className="hero-art" to={`/products/${featured.slug}`}>
-              <ProductArt {...featured} />
+              <ProductArt {...featured} priority />
             </Link>
             <div className="hero-product-bottom">
               <strong>{money(featured.variants[0].priceMinor)}</strong>
@@ -124,7 +135,14 @@ export function Home() {
               <button
                 className="button"
                 disabled={action.busy}
-                onClick={() => action.run(() => add(featured.variants[0].id))}
+                onClick={(e) => {
+                  const image =
+                    e.currentTarget.closest('.hero-product')?.querySelector('.product-art') ?? null;
+                  action.run(async () => {
+                    await add(featured);
+                    flyToCart(image);
+                  });
+                }}
               >
                 Add to bag <Plus size={14} />
               </button>
@@ -147,6 +165,88 @@ export function Home() {
           {data?.slice(0, 4).map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
+        </div>
+      </section>
+      <section className="category-discovery" aria-labelledby="category-discovery-title">
+        <div className="section-title">
+          <div>
+            <span className="eyebrow">A place for every good thing</span>
+            <h2 id="category-discovery-title">Find your kind of comfort.</h2>
+          </div>
+          <p className="muted">Start with a corner. Make it your own.</p>
+        </div>
+        <div className="discovery-grid">
+          {categories.slice(0, 4).map((category, index) => {
+            const product = data?.find((p) => p.category.id === category.id);
+            return (
+              <Link
+                className="discovery-card panel"
+                key={category.id}
+                to={`/shop?category=${encodeURIComponent(category.slug)}`}
+              >
+                <div className={`discovery-art discovery-tone-${index}`}>
+                  {product ? (
+                    <ProductArt {...product} />
+                  ) : (
+                    <ProductArt art="chair" name={category.name} />
+                  )}
+                  <span className="discovery-number">0{index + 1}</span>
+                </div>
+                <div className="discovery-caption">
+                  <div>
+                    <small>Explore the collection</small>
+                    <h3>{category.name}</h3>
+                  </div>
+                  <ArrowUpRight size={20} strokeWidth={1.5} />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+      <section className="shopping-notes panel" aria-labelledby="shopping-notes-title">
+        <div className="shopping-notes-copy">
+          <span className="eyebrow">The little details, considered.</span>
+          <h2 id="shopping-notes-title">
+            Good things.
+            <br />A little less guesswork.
+          </h2>
+          <p>From your first favourite to the moment it arrives, here’s what to expect.</p>
+          <Link className="text-link" to="/contact">
+            We’re here to help <ArrowUpRight size={15} />
+          </Link>
+        </div>
+        <div className="shopping-notes-list">
+          <Link to="/policies/shipping">
+            <span className="shopping-note-icon">
+              <Truck size={22} strokeWidth={1.5} />
+            </span>
+            <div>
+              <h3>On its way to your everyday</h3>
+              <p>{config.home.deliveryPromise}</p>
+            </div>
+            <ArrowUpRight size={16} />
+          </Link>
+          <Link to="/policies/returns">
+            <span className="shopping-note-icon">
+              <ShieldCheck size={22} strokeWidth={1.5} />
+            </span>
+            <div>
+              <h3>A little time to feel at home</h3>
+              <p>{config.returns.windowDays}-day returns. Read the details before you decide.</p>
+            </div>
+            <ArrowUpRight size={16} />
+          </Link>
+          <Link to="/policies/terms">
+            <span className="shopping-note-icon">
+              <Banknote size={22} strokeWidth={1.5} />
+            </span>
+            <div>
+              <h3>Pay when it arrives</h3>
+              <p>Cash on delivery. {config.checkout.onlinePaymentLabel}.</p>
+            </div>
+            <ArrowUpRight size={16} />
+          </Link>
         </div>
       </section>
       <section className="manifesto panel">
@@ -174,6 +274,20 @@ export function Shop() {
   const { data, meta, loading, error } = useResource<Product[]>(
     `/products?marketId=${encodeURIComponent(market)}&${search.toString()}`,
   );
+  useEffect(() => {
+    setQuery(search.get('q') ?? '');
+  }, [search]);
+  useEffect(() => {
+    if (query === (search.get('q') ?? '')) return;
+    const timer = setTimeout(() => {
+      const next = new URLSearchParams(search);
+      if (query.trim()) next.set('q', query.trim());
+      else next.delete('q');
+      next.delete('page');
+      setSearch(next, { replace: true });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, search, setSearch]);
   const set = (k: string, v: string) => {
     const next = new URLSearchParams(search);
     if (v) next.set(k, v);
@@ -249,10 +363,10 @@ export function Shop() {
         <span className="muted">{meta?.total ?? 0} objects</span>
       </div>
       <Notice>{error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="products" />
       ) : data?.length ? (
-        <div className="product-grid catalog-grid">
+        <div className="product-grid catalog-grid" aria-busy={loading}>
           {data.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -273,7 +387,7 @@ export function Shop() {
       {meta && meta.pages > 1 && (
         <div className="pagination">
           <button
-            disabled={meta.page <= 1}
+            disabled={loading || meta.page <= 1}
             onClick={() => {
               const next = new URLSearchParams(search);
               next.set('page', String(meta.page - 1));
@@ -286,7 +400,7 @@ export function Shop() {
             Page {meta.page} of {meta.pages}
           </span>
           <button
-            disabled={meta.page >= meta.pages}
+            disabled={loading || meta.page >= meta.pages}
             onClick={() => {
               const next = new URLSearchParams(search);
               next.set('page', String(meta.page + 1));
@@ -311,7 +425,7 @@ export function ProductDetail() {
     [variantId, setVariantId] = useState(''),
     [quantity, setQuantity] = useState(1),
     action = useAction();
-  if (loading) return <Loading />;
+  if (loading) return <Loading variant="detail" />;
   if (!p) return <Notice>{error || 'Product not found.'}</Notice>;
   const v = p.variants.find((v) => v.id === variantId) ?? p.variants[0];
   return (
@@ -348,7 +462,7 @@ export function ProductDetail() {
                 aria-label="Quantity"
                 type="number"
                 min="1"
-                max={Math.min(10, v.available)}
+                max={Math.min(config.checkout.maxQuantityPerSku, v.available)}
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
               />
@@ -356,7 +470,14 @@ export function ProductDetail() {
             <button
               className="button"
               disabled={action.busy || v.available < quantity || quantity < 1}
-              onClick={() => action.run(() => add(v.id, quantity))}
+              onClick={(e) => {
+                const image =
+                  e.currentTarget.closest('.detail-grid')?.querySelector('.product-art') ?? null;
+                action.run(async () => {
+                  await add(p, v.id, quantity);
+                  flyToCart(image);
+                });
+              }}
             >
               {v.available ? 'Add to bag' : 'Currently sold out'}
               <Plus size={17} />
@@ -373,19 +494,18 @@ export function ProductDetail() {
               {config.returns.windowDays}-day returns
             </span>
           </div>
-          {[
-            ['Materials', p.materials],
-            ['Dimensions', p.dimensions],
-            ['Care', p.care],
-          ].map(([t, b]) => (
-            <details key={t}>
-              <summary>
-                {t}
-                <Plus size={15} />
-              </summary>
-              <p>{b || 'Contact us for more information.'}</p>
-            </details>
-          ))}
+          <dl className="product-specifications">
+            {[
+              ['Materials', p.materials],
+              ['Dimensions', p.dimensions],
+              ['Care', p.care],
+            ].map(([title, description]) => (
+              <div key={title}>
+                <dt>{title}</dt>
+                <dd>{description || 'Contact us for more information.'}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </div>
       <section className="reviews-section">

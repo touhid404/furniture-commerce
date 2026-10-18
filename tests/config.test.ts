@@ -40,6 +40,7 @@ test('public profile excludes private payment and tax configuration', () => {
   assert.deepEqual(Object.keys(data.checkout).sort(), [
     'codEnabled',
     'guestEnabled',
+    'maxQuantityPerSku',
     'onlinePaymentLabel',
   ]);
   assert.equal('tax' in data, false);

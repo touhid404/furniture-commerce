@@ -1,6 +1,6 @@
 # Product requirements
 
-> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 87-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
 
 ## Purpose and outcome
 
@@ -30,7 +30,7 @@ The baseline is a single merchant, a single inventory pool, and one shipping add
 
 ## Release scope
 
-The production release includes the four reference screens; product details; search, filters and sorting; registration and account recovery; guest and account bags; shipping and checkout; card and COD orders; order confirmation, tracking, cancellation and return requests; admin catalog, categories, inventory, order fulfillment, returns, refunds, reporting, home content and media; policy pages; and operational monitoring.
+The production release includes the four reference screens; product details; search, filters and sorting; registration and account recovery; guest and account bags; shipping and checkout; COD orders (online payment deferred); order confirmation, tracking, cancellation and return requests; admin catalog, categories, inventory, order fulfillment, returns, refunds, reporting, home content and media; policy pages; and operational monitoring.
 
 Card provider and delivery integrations use adapters so the chosen country does not force a frontend redesign. Provider selection, taxes, shipping fees, refund policy and business contact details remain owner-supplied decisions. Sample dollar amounts and Danish-themed names in the video are visual reference content, not confirmed business settings.
 

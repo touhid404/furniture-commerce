@@ -7,6 +7,8 @@ import { app } from '../../backend/src/app.js';
 import { prisma } from '../../backend/src/db/client.js';
 import { storeConfig } from '../../backend/src/config.js';
 import { checkStorage } from '../../backend/src/services/storage.js';
+import { assertFixtureEnvironment } from '../fixtures/environment.js';
+assertFixtureEnvironment();
 // Integration fixtures deliberately write records: refuse the production branch.
 if (
   process.env.NEON_BRANCH === 'production' ||
@@ -100,8 +102,24 @@ const productInput = {
   priceMinor: '10000',
   onHand: 8,
 };
+async function customer() {
+  const c = await client();
+  await c.ok('/auth/register', 'POST', {
+    name: 'API Customer',
+    email: `api-${randomUUID()}@example.invalid`,
+    password: 'Integration-password-123!',
+  });
+  return c;
+}
 async function quote(c: Client, variantId = variant) {
-  await c.ok('/cart/items', 'POST', { variantId, quantity: 1 });
+  const me = await c.ok('/auth/me');
+  if (!me.user)
+    await c.ok('/auth/register', 'POST', {
+      name: 'API Customer',
+      email: `api-${randomUUID()}@example.invalid`,
+      password: 'Integration-password-123!',
+    });
+  await c.ok('/cart/sync', 'POST', { marketId: market.id, items: [{ variantId, quantity: 1 }] });
   return c.ok('/checkout/quotes', 'POST', delivery);
 }
 async function order(c: Client) {
@@ -169,6 +187,11 @@ try {
             ).status,
             403,
           );
+          assert.equal(
+            (await guest.call('/cart/sync', 'POST', { marketId: market.id, items: [] })).status,
+            401,
+          );
+          assert.equal((await guest.call('/checkout/quotes', 'POST', delivery)).status, 401);
           const result = await guest.ok('/auth/register', 'POST', {
             name: 'Security Test',
             email: `security-${suffix}@example.invalid`,
@@ -183,10 +206,10 @@ try {
         },
       );
       await t.test(
-        'guest isolation, price tampering, quote expiry and idempotent order replay',
+        'account isolation, price tampering, quote expiry and idempotent order replay',
         async () => {
-          const a = await client(),
-            b = await client(),
+          const a = await customer(),
+            b = await customer(),
             q = await quote(a),
             key = randomUUID();
           assert.equal(
@@ -283,8 +306,8 @@ try {
             ).status,
             409,
           );
-          const a = await client(),
-            b = await client(),
+          const a = await customer(),
+            b = await customer(),
             qa = await quote(a),
             qb = await quote(b);
           const r = await Promise.all([
@@ -418,7 +441,7 @@ try {
           const c = await client(),
             mail = `mfa-${suffix}@example.invalid`,
             password = 'A-long-test-password-123';
-          const result = await c.ok('/auth/register', 'POST', {
+          await c.ok('/auth/register', 'POST', {
             name: 'MFA Test',
             email: mail,
             password,
@@ -489,7 +512,7 @@ try {
         async () => {
           assert.equal((await checkStorage()).status, 'connected');
           const png = Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jgdEAAAAASUVORK5CYII=',
+            'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAoElEQVRoge2SQQkAQRDD6l9PJPS/lk7EPcJAIQLS0PRxmugG3QD0it2FuEt0g24AesXuQtwlukE3AL1idyHuEt2gG4BesbsQd4lu0A1Ar9hdiLtEN+gGoFfsLsRdoht0A9ArdhfiLtENugHoFbsLcZfoBt0A9IrdhbhLdINuAHrF7kLcJbpBNwC9Ynch7hLdoBuAXrG7EHeJbtANQK/4hw+1HnIdBrYPpAAAAABJRU5ErkJggg==',
             'base64',
           );
           assert.equal(

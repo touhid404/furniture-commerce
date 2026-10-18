@@ -3,6 +3,7 @@ model MediaAsset {
   name String
   url String @unique
   objectKey String @default("")
+  thumbnailKey String @default("")
   bucket String @default("assets")
   size Int
   mimeType String

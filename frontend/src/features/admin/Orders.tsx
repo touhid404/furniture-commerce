@@ -1,15 +1,15 @@
-import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Download, ArrowRight } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useStore } from '../../app/Store.js';
 import { send } from '../../lib/api.js';
 import { formValues, useAction, useResource } from '../../lib/hooks.js';
+import { useAdminList, AdminListTools, AdminPagination } from '../../components/AdminList.js';
 import type { Order } from '../../lib/types.js';
 import { Badge, Empty, Field, Loading, Notice, PageTitle } from '../../components/UI.js';
 export function Orders() {
   const [params, setParams] = useSearchParams(),
-    [query, setQuery] = useState(params.get('q') ?? ''),
-    { data, loading, error } = useResource<Order[]>(`/admin/orders?${params}`),
+    list = useAdminList<Order>('/admin/orders'),
+    { data, loading, error } = list,
     { money } = useStore();
   return (
     <>
@@ -20,26 +20,17 @@ export function Orders() {
         </a>
       </PageTitle>
       <div className="admin-toolbar">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setParams({ q: query });
-          }}
-        >
-          <input
-            aria-label="Search orders"
-            placeholder="Search order or email…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button className="icon-button" aria-label="Search">
-            <ArrowRight size={16} />
-          </button>
-        </form>
+        <AdminListTools list={list} label="Orders" />
         <select
           aria-label="Order status"
           value={params.get('status') ?? ''}
-          onChange={(e) => setParams({ status: e.target.value })}
+          onChange={(e) => {
+            const next = new URLSearchParams(params);
+            if (e.target.value) next.set('status', e.target.value);
+            else next.delete('status');
+            next.delete('page');
+            setParams(next);
+          }}
         >
           <option value="">All statuses</option>
           {['CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED'].map((s) => (
@@ -48,8 +39,8 @@ export function Orders() {
         </select>
       </div>
       <Notice>{error}</Notice>
-      {loading ? (
-        <Loading />
+      {loading && !data ? (
+        <Loading variant="table" />
       ) : data?.length ? (
         <div className="panel table-wrap">
           <table>
@@ -95,27 +86,7 @@ export function Orders() {
       ) : (
         <Empty title="No orders in this view." />
       )}
-      <div className="pagination">
-        <button
-          disabled={!params.has('page') || params.get('page') === '1'}
-          onClick={() => {
-            params.set('page', String(Math.max(1, Number(params.get('page') ?? 1) - 1)));
-            setParams(params);
-          }}
-        >
-          Previous
-        </button>
-        <span>Page {params.get('page') ?? 1}</span>
-        <button
-          disabled={!data || data.length < 30}
-          onClick={() => {
-            params.set('page', String(Number(params.get('page') ?? 1) + 1));
-            setParams(params);
-          }}
-        >
-          Next
-        </button>
-      </div>
+      <AdminPagination list={list} />
     </>
   );
 }
@@ -124,7 +95,7 @@ export function AdminOrder() {
     { data: o, loading, error, reload } = useResource<Order>(`/admin/orders/${id}`),
     { money, notify } = useStore(),
     action = useAction();
-  if (loading) return <Loading />;
+  if (loading) return <Loading variant="table" />;
   if (!o) return <Notice>{error}</Notice>;
   const act = (path: string, data: unknown = {}) =>
     action.run(async () => {
@@ -232,7 +203,7 @@ export function AdminOrder() {
                 className="text-link danger"
                 disabled={action.busy}
                 onClick={() => {
-                  if (confirm('Cancel this order and release inventory?')) act('cancellations');
+                  act('cancellations');
                 }}
               >
                 Cancel order
@@ -256,7 +227,7 @@ export function AdminOrder() {
               className="button wide"
               disabled={action.busy}
               onClick={() => {
-                if (confirm('Confirm the cash has been collected?')) act('cod-collections');
+                act('cod-collections');
               }}
             >
               Record cash collected

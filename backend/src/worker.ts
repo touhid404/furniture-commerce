@@ -1,3 +1,4 @@
+import { refreshStoreSettings } from './services/store-settings.js';
 import { createTransport } from 'nodemailer';
 import { prisma } from './db/client.js';
 import { storeConfig } from './config.js';
@@ -22,6 +23,7 @@ async function run() {
       : undefined,
   });
   while (!stop) {
+    await refreshStoreSettings();
     await prisma.outboxJob.updateMany({
       where: { status: 'PROCESSING', attempts: { gte: 5 }, leaseUntil: { lt: new Date() } },
       data: {

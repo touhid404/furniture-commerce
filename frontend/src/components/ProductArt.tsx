@@ -1,20 +1,50 @@
-import { useId } from 'react';
-export function ProductArt({
+import { memo, useId, useState } from 'react';
+export const ProductArt = memo(function ProductArt({
   art = 'chair',
   color = '#bdc9ad',
   imageUrl,
   name = '',
   className = '',
+  priority = false,
 }: {
   art?: string;
   color?: string;
   imageUrl?: string;
   name?: string;
   className?: string;
+  priority?: boolean;
 }) {
   const uid = useId().replace(/:/g, '');
+  const [loaded, setLoaded] = useState(''),
+    [failed, setFailed] = useState('');
   if (imageUrl)
-    return <img className={`product-art ${className}`} src={imageUrl} alt={name} loading="lazy" />;
+    return (
+      <div className={`product-art photo-art ${className}`}>
+        {loaded !== imageUrl && failed !== imageUrl && (
+          <span className="skeleton-block photo-placeholder" aria-hidden="true" />
+        )}
+        {failed === imageUrl && <small className="photo-error">Image unavailable</small>}
+        <img
+          className="product-photo"
+          onLoad={() => setLoaded(imageUrl)}
+          onError={() => setFailed(imageUrl)}
+          style={{ opacity: loaded === imageUrl ? 1 : 0 }}
+          src={imageUrl}
+          srcSet={
+            imageUrl.startsWith('/media/')
+              ? `${imageUrl}?size=card 480w, ${imageUrl} 1200w`
+              : undefined
+          }
+          sizes="(max-width: 600px) 90vw, (max-width: 1000px) 45vw, 32vw"
+          alt={name}
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
+          decoding="async"
+          width={500}
+          height={500}
+        />
+      </div>
+    );
   const fill = `url(#${uid}body)`,
     wood = `url(#${uid}wood)`;
   return (
@@ -185,4 +215,4 @@ export function ProductArt({
       )}
     </svg>
   );
-}
+});

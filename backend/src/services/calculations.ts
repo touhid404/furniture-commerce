@@ -49,3 +49,24 @@ export function retryableTransaction(error: unknown): boolean {
   };
   return 'meta' in error && conflict(error.meta);
 }
+
+export function couponProblem(
+  coupon: {
+    active: boolean;
+    currency: string;
+    used: number;
+    maxUses: number;
+    minimumMinor: bigint;
+    expiresAt: Date | null;
+  } | null,
+  currency: string,
+  subtotal: bigint,
+  now = new Date(),
+) {
+  if (!coupon || !coupon.active) return 'unavailable';
+  if (coupon.currency !== currency) return 'currency';
+  if (coupon.used >= coupon.maxUses) return 'exhausted';
+  if (coupon.expiresAt && coupon.expiresAt <= now) return 'expired';
+  if (coupon.minimumMinor > subtotal) return 'minimum';
+  return null;
+}
