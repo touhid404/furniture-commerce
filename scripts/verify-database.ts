@@ -12,9 +12,17 @@ try {
   });
   assert.equal(result, 42);
   console.log('PASS Prisma read-only transaction result = 42');
-  const tables = await prisma.$queryRaw<Array<{ count: bigint }>>`SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`;
-  console.log(`INFO public application tables found: ${tables[0].count.toString()}; no schema changes performed`);
+  const tables = await prisma.$queryRaw<
+    Array<{ count: bigint }>
+  >`SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`;
+  console.log(
+    `INFO public application tables found: ${tables[0].count.toString()}; no schema changes performed`,
+  );
 } catch {
-  console.error('FAIL database verification; inspect the local Neon environment and connection permissions (credentials omitted)');
+  console.error(
+    'FAIL database verification; inspect the local Neon environment and connection permissions (credentials omitted)',
+  );
   process.exitCode = 1;
-} finally { await prisma.$disconnect(); }
+} finally {
+  await prisma.$disconnect();
+}

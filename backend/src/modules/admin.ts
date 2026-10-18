@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { z } from "zod";
-import { randomUUID } from "node:crypto";
-import { prisma } from "../db/client.js";
-import { storeConfig } from "../config.js";
-import { requireAdmin } from "./auth.js";
+import { Router } from 'express';
+import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
+import { prisma } from '../db/client.js';
+import { storeConfig } from '../config.js';
+import { requireAdmin } from './auth.js';
 import {
   audit,
   atomic,
@@ -15,16 +15,20 @@ import {
   lockOrder,
   moveStock,
   safeUrl,
-} from "../services/core.js";
-import { cancelOrder } from "./commerce.js";
+} from '../services/core.js';
+import { cancelOrder } from './commerce.js';
+import { media } from './media.js';
 export const admin = Router();
 admin.use(requireAdmin);
 admin.use((req, _res, next) => {
-  if (storeConfig.mode === "production" && !req.shopSession!.user!.totpSecret)
+  if (
+    storeConfig.mode === 'production' &&
+    (!req.shopSession!.user!.totpSecret || !req.shopSession!.mfaVerified)
+  )
     fail(
       403,
-      "MFA_ENROLLMENT_REQUIRED",
-      "Enable administrator MFA in account settings before operating this production store.",
+      'MFA_ENROLLMENT_REQUIRED',
+      'Enable administrator MFA in account settings before operating this production store.',
     );
   next();
 });
@@ -32,85 +36,101 @@ const pagination = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(30),
 });
-admin.get("/dashboard", async (req, res) => {
-  const range = z
-    .enum(["7d", "30d", "90d"])
-    .catch("30d")
-    .parse(req.query.range);
+admin.get('/dashboard', async (req, res) => {
+  const range = z.enum(['7d', '30d', '90d']).catch('30d').parse(req.query.range);
   const currency = String(req.query.currency ?? storeConfig.currencies[0].code);
   if (!storeConfig.currencies.some((c) => c.code === currency))
-    fail(422, "CURRENCY_INVALID", "Unknown currency.");
+    fail(422, 'CURRENCY_INVALID', 'Unknown currency.');
   const days = Number(range.slice(0, -1));
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
   const prior = new Date(start.getTime() - days * 86400000);
   const orders = await prisma.order.findMany({
-    where: { currency, createdAt: { gte: prior } },
-    include: { items: true },
-    orderBy: { createdAt: "desc" },
+    where: {
+      currency,
+      OR: [
+        { createdAt: { gte: prior } },
+        { events: { some: { type: 'COD_COLLECTED', createdAt: { gte: prior } } } },
+        { refunds: { some: { createdAt: { gte: prior } } } },
+      ],
+    },
+    include: { items: true, events: { where: { type: 'COD_COLLECTED' } }, refunds: true },
+    orderBy: { createdAt: 'desc' },
   });
+  const inRange = (date: Date, from: Date, to: Date) => date >= from && date < to;
+  const cash = (o: (typeof orders)[number], from: Date, to: Date) => {
+    const merchandise = o.subtotalMinor - o.discountMinor;
+    const receipt = o.events.some((e) => inRange(e.createdAt, from, to)) ? merchandise : 0n;
+    const refunds = o.refunds
+      .filter((r) => inRange(r.createdAt, from, to))
+      .reduce((sum, r) => sum + r.amountMinor, 0n);
+    return Number(
+      receipt - (o.totalMinor ? (refunds * merchandise + o.totalMinor / 2n) / o.totalMinor : 0n),
+    );
+  };
+  const summarize = (from: Date, to: Date) => {
+    const list = orders.filter((o) => o.status !== 'CANCELLED' && inRange(o.createdAt, from, to));
+    return {
+      revenue: orders.reduce((sum, o) => sum + cash(o, from, to), 0),
+      orders: list.length,
+      aov: list.length
+        ? Math.round(
+            list.reduce((sum, o) => sum + Number(o.subtotalMinor - o.discountMinor), 0) /
+              list.length,
+          )
+        : 0,
+      customers: new Set(list.map((o) => o.userId ?? o.email)).size,
+    };
+  };
   const current = orders.filter(
-    (o) => o.createdAt >= start && o.status !== "CANCELLED",
+    (o) => o.status !== 'CANCELLED' && inRange(o.createdAt, start, end),
   );
-  const previous = orders.filter(
-    (o) => o.createdAt < start && o.status !== "CANCELLED",
-  );
-  const summarize = (list: typeof orders) => ({
-    revenue: list.reduce(
-      (s, o) =>
-        s +
-        (o.paymentStatus === "PAID" ||
-        o.paymentStatus === "PARTIALLY_REFUNDED" ||
-        o.paymentStatus === "REFUNDED"
-          ? Number(
-              o.totalMinor - o.shippingMinor - o.taxMinor - o.refundedMinor,
-            )
-          : 0),
-      0,
-    ),
-    orders: list.length,
-    aov: list.length
-      ? Math.round(
-          list.reduce(
-            (s, o) => s + Number(o.subtotalMinor - o.discountMinor),
-            0,
-          ) / list.length,
-        )
-      : 0,
-    customers: new Set(list.map((o) => o.userId ?? o.email)).size,
-  });
-  const metrics = summarize(current);
-  const comparison = summarize(previous);
+  const metrics = summarize(start, end),
+    comparison = summarize(prior, start);
   const series = Array.from({ length: days }, (_, i) => {
     const from = new Date(start.getTime() + i * 86400000),
       to = new Date(from.getTime() + 86400000);
-    return {
-      date: from.toISOString(),
-      ...summarize(
-        current.filter((o) => o.createdAt >= from && o.createdAt < to),
-      ),
-    };
+    return { date: from.toISOString(), ...summarize(from, to) };
   });
   const categories: Record<string, number> = {};
-  for (const o of current.filter(
-    (o) =>
-      o.paymentStatus === "PAID" || o.paymentStatus === "PARTIALLY_REFUNDED",
-  ))
-    for (const i of o.items)
-      categories[i.category] =
-        (categories[i.category] ?? 0) +
-        Number(i.lineTotalMinor) *
-          (Number(o.totalMinor - o.refundedMinor) /
-            Math.max(1, Number(o.totalMinor)));
-  const todayKey = new Intl.DateTimeFormat("en-CA", {
-    timeZone: storeConfig.timezone,
-  }).format(end);
-  const today = current.filter(
-    (o) =>
-      new Intl.DateTimeFormat("en-CA", {
-        timeZone: storeConfig.timezone,
-      }).format(o.createdAt) === todayKey,
+  for (const o of orders) {
+    const revenue = cash(o, start, end);
+    const gross = o.items.reduce((sum, i) => sum + Number(i.lineTotalMinor), 0);
+    if (!revenue || !gross) continue;
+    for (const item of o.items)
+      categories[item.category] =
+        (categories[item.category] ?? 0) + (revenue * Number(item.lineTotalMinor)) / gross;
+  }
+  const dateKey = (date: Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: storeConfig.timezone }).format(date);
+  const todayKey = dateKey(end);
+  const todayOrders = orders.filter(
+    (o) => o.status !== 'CANCELLED' && dateKey(o.createdAt) === todayKey,
   );
+  const today = {
+    orders: todayOrders.length,
+    customers: new Set(todayOrders.map((o) => o.userId ?? o.email)).size,
+    aov: todayOrders.length
+      ? Math.round(
+          todayOrders.reduce((sum, o) => sum + Number(o.subtotalMinor - o.discountMinor), 0) /
+            todayOrders.length,
+        )
+      : 0,
+    revenue: orders.reduce((sum, o) => {
+      const merchandise = o.subtotalMinor - o.discountMinor;
+      const receipt = o.events.some((e) => dateKey(e.createdAt) === todayKey)
+        ? Number(merchandise)
+        : 0;
+      const refund = o.refunds
+        .filter((r) => dateKey(r.createdAt) === todayKey)
+        .reduce((n, r) => n + r.amountMinor, 0n);
+      return (
+        sum +
+        receipt -
+        Number(o.totalMinor ? (refund * merchandise + o.totalMinor / 2n) / o.totalMinor : 0n)
+      );
+    }, 0),
+  };
   res.json({
     data: {
       range,
@@ -121,19 +141,17 @@ admin.get("/dashboard", async (req, res) => {
       comparison,
       series,
       categories,
-      today: summarize(today),
+      today,
       goalMinor: storeConfig.dashboard.dailyGoalByCurrency[currency] ?? 0,
       recent: current.slice(0, 12),
     },
   });
 });
-admin.get("/orders", async (req, res) => {
+admin.get('/orders', async (req, res) => {
   const q = pagination
     .extend({
       q: z.string().max(100).optional(),
-      status: z
-        .enum(["CONFIRMED", "PROCESSING", "COMPLETED", "CANCELLED"])
-        .optional(),
+      status: z.enum(['CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED']).optional(),
     })
     .parse(req.query);
   const where = {
@@ -141,8 +159,8 @@ admin.get("/orders", async (req, res) => {
     ...(q.q
       ? {
           OR: [
-            { number: { contains: q.q, mode: "insensitive" as const } },
-            { email: { contains: q.q, mode: "insensitive" as const } },
+            { number: { contains: q.q, mode: 'insensitive' as const } },
+            { email: { contains: q.q, mode: 'insensitive' as const } },
           ],
         }
       : {}),
@@ -151,7 +169,7 @@ admin.get("/orders", async (req, res) => {
     prisma.order.findMany({
       where,
       include: { items: true, shipment: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       skip: (q.page - 1) * q.limit,
       take: q.limit,
     }),
@@ -162,49 +180,49 @@ admin.get("/orders", async (req, res) => {
     meta: { total, page: q.page, pages: Math.ceil(total / q.limit) },
   });
 });
-admin.get("/orders/:id", async (req, res) => {
+admin.get('/orders/:id', async (req, res) => {
   const o = await prisma.order.findUnique({
     where: { id: id.parse(req.params.id) },
     include: {
       items: true,
-      events: { orderBy: { createdAt: "asc" } },
+      events: { orderBy: { createdAt: 'asc' } },
       shipment: true,
       returns: true,
       refunds: true,
       user: { select: { name: true } },
     },
   });
-  if (!o) fail(404, "NOT_FOUND", "Order not found.");
+  if (!o) fail(404, 'NOT_FOUND', 'Order not found.');
   res.json({ data: o });
 });
-admin.post("/orders/:id/processing", async (req, res) =>
+admin.post('/orders/:id/processing', async (req, res) =>
   res.json({
     data: await atomic(async (tx) => {
       const o = await lockOrder(tx, id.parse(req.params.id));
-      if (!o || o.status === "CANCELLED" || o.shipment)
-        fail(409, "STATE_CONFLICT", "This order cannot be processed.");
+      if (!o || o.status === 'CANCELLED' || o.shipment)
+        fail(409, 'STATE_CONFLICT', 'This order cannot be processed.');
       await event(
         tx,
         o.id,
-        "PROCESSING",
-        "The store is preparing your order.",
+        'PROCESSING',
+        'The store is preparing your order.',
         req.shopSession!.userId!,
       );
       return tx.order.update({
         where: { id: o.id },
         data: {
-          status: "PROCESSING",
-          fulfillment: "PROCESSING",
+          status: 'PROCESSING',
+          fulfillment: 'PROCESSING',
           version: { increment: 1 },
         },
       });
     }),
   }),
 );
-admin.post("/orders/:id/cancellations", async (req, res) =>
+admin.post('/orders/:id/cancellations', async (req, res) =>
   res.json({ data: await cancelOrder(req, id.parse(req.params.id), true) }),
 );
-admin.post("/orders/:id/shipments", async (req, res) => {
+admin.post('/orders/:id/shipments', async (req, res) => {
   const d = z
     .object({
       carrier: z.string().trim().min(2).max(80),
@@ -215,15 +233,15 @@ admin.post("/orders/:id/shipments", async (req, res) => {
   res.status(201).json({
     data: await atomic(async (tx) => {
       const o = await lockOrder(tx, id.parse(req.params.id));
-      if (!o || o.status === "CANCELLED" || o.shipment)
-        fail(409, "STATE_CONFLICT", "This order cannot be shipped.");
+      if (!o || o.status === 'CANCELLED' || o.shipment)
+        fail(409, 'STATE_CONFLICT', 'This order cannot be shipped.');
       for (const i of o.items)
         await moveStock(
           tx,
           i.variantId,
           -i.quantity,
           -i.quantity,
-          "SHIPPED",
+          'SHIPPED',
           `${o.id}:${i.variantId}:ship`,
           req.shopSession!.userId!,
         );
@@ -231,28 +249,28 @@ admin.post("/orders/:id/shipments", async (req, res) => {
       await event(
         tx,
         o.id,
-        "SHIPPED",
+        'SHIPPED',
         `Shipped with ${d.carrier}. Tracking: ${d.tracking}`,
         req.shopSession!.userId!,
       );
-      await audit(tx, req.shopSession!.userId!, "ORDER_SHIPPED", o.id, d);
+      await audit(tx, req.shopSession!.userId!, 'ORDER_SHIPPED', o.id, d);
       return tx.order.update({
         where: { id: o.id },
         data: {
-          fulfillment: "SHIPPED",
-          status: "PROCESSING",
+          fulfillment: 'SHIPPED',
+          status: 'PROCESSING',
           version: { increment: 1 },
         },
       });
     }),
   });
 });
-admin.post("/orders/:id/delivery", async (req, res) =>
+admin.post('/orders/:id/delivery', async (req, res) =>
   res.json({
     data: await atomic(async (tx) => {
       const o = await lockOrder(tx, id.parse(req.params.id));
-      if (!o?.shipment || o.fulfillment !== "SHIPPED")
-        fail(409, "STATE_CONFLICT", "Only shipped orders can be delivered.");
+      if (!o?.shipment || o.fulfillment !== 'SHIPPED')
+        fail(409, 'STATE_CONFLICT', 'Only shipped orders can be delivered.');
       await tx.shipment.update({
         where: { orderId: o.id },
         data: { deliveredAt: new Date() },
@@ -260,47 +278,43 @@ admin.post("/orders/:id/delivery", async (req, res) =>
       await event(
         tx,
         o.id,
-        "DELIVERED",
-        "Your order has been delivered.",
+        'DELIVERED',
+        'Your order has been delivered.',
         req.shopSession!.userId!,
       );
       return tx.order.update({
         where: { id: o.id },
         data: {
-          fulfillment: "DELIVERED",
-          status: "COMPLETED",
+          fulfillment: 'DELIVERED',
+          status: 'COMPLETED',
           version: { increment: 1 },
         },
       });
     }),
   }),
 );
-admin.post("/orders/:id/cod-collections", async (req, res) =>
+admin.post('/orders/:id/cod-collections', async (req, res) =>
   res.json({
     data: await atomic(async (tx) => {
       const o = await lockOrder(tx, id.parse(req.params.id));
-      if (!o || o.fulfillment !== "DELIVERED" || o.paymentStatus !== "UNPAID")
-        fail(
-          409,
-          "STATE_CONFLICT",
-          "Only delivered unpaid COD orders can be collected.",
-        );
+      if (!o || o.fulfillment !== 'DELIVERED' || o.paymentStatus !== 'UNPAID')
+        fail(409, 'STATE_CONFLICT', 'Only delivered unpaid COD orders can be collected.');
       await event(
         tx,
         o.id,
-        "COD_COLLECTED",
-        "Cash payment collected on delivery.",
+        'COD_COLLECTED',
+        'Cash payment collected on delivery.',
         req.shopSession!.userId!,
       );
-      await audit(tx, req.shopSession!.userId!, "COD_COLLECTED", o.id);
+      await audit(tx, req.shopSession!.userId!, 'COD_COLLECTED', o.id);
       return tx.order.update({
         where: { id: o.id },
-        data: { paymentStatus: "PAID", version: { increment: 1 } },
+        data: { paymentStatus: 'PAID', version: { increment: 1 } },
       });
     }),
   }),
 );
-admin.post("/orders/:id/refunds", async (req, res) => {
+admin.post('/orders/:id/refunds', async (req, res) => {
   const d = z
     .object({
       amountMinor: z.coerce.bigint().positive(),
@@ -309,7 +323,7 @@ admin.post("/orders/:id/refunds", async (req, res) => {
     })
     .strict()
     .parse(req.body);
-  const key = z.string().min(16).max(128).parse(req.get("Idempotency-Key"));
+  const key = z.string().min(16).max(128).parse(req.get('Idempotency-Key'));
   res.status(201).json({
     data: await atomic(async (tx) => {
       const orderId = id.parse(req.params.id);
@@ -320,26 +334,19 @@ admin.post("/orders/:id/refunds", async (req, res) => {
         if (
           old.orderId !== orderId ||
           old.amountMinor !== d.amountMinor ||
-          old.reference !== d.reference
+          old.reference !== d.reference ||
+          old.reason !== d.reason
         )
-          fail(
-            409,
-            "IDEMPOTENCY_CONFLICT",
-            "This refund key was used for another request.",
-          );
+          fail(409, 'IDEMPOTENCY_CONFLICT', 'This refund key was used for another request.');
         return old;
       }
       const o = await lockOrder(tx, orderId);
       if (
         !o ||
-        !["PAID", "PARTIALLY_REFUNDED"].includes(o.paymentStatus) ||
+        !['PAID', 'PARTIALLY_REFUNDED'].includes(o.paymentStatus) ||
         o.refundedMinor + d.amountMinor > o.totalMinor
       )
-        fail(
-          422,
-          "REFUND_INVALID",
-          "Refund exceeds the collected unrefunded balance.",
-        );
+        fail(422, 'REFUND_INVALID', 'Refund exceeds the collected unrefunded balance.');
       const refunded = o.refundedMinor + d.amountMinor;
       const r = await tx.refund.create({
         data: { orderId: o.id, ...d, idempotencyKey: key },
@@ -348,19 +355,18 @@ admin.post("/orders/:id/refunds", async (req, res) => {
         where: { id: o.id },
         data: {
           refundedMinor: refunded,
-          paymentStatus:
-            refunded === o.totalMinor ? "REFUNDED" : "PARTIALLY_REFUNDED",
+          paymentStatus: refunded === o.totalMinor ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
           version: { increment: 1 },
         },
       });
       await event(
         tx,
         o.id,
-        "MANUAL_REFUND",
+        'MANUAL_REFUND',
         `Manual COD refund recorded. Reference: ${d.reference}`,
         req.shopSession!.userId!,
       );
-      await audit(tx, req.shopSession!.userId!, "MANUAL_REFUND", o.id, {
+      await audit(tx, req.shopSession!.userId!, 'MANUAL_REFUND', o.id, {
         ...d,
         amountMinor: d.amountMinor.toString(),
       });
@@ -377,40 +383,38 @@ const productInput = z
       .max(120),
     categoryId: id,
     description: z.string().min(10).max(5000),
-    materials: z.string().max(2000).default(""),
-    dimensions: z.string().max(500).default(""),
-    care: z.string().max(1000).default(""),
-    art: z
-      .enum(["chair", "lamp", "pendant", "table", "sofa", "vase", "textile"])
-      .default("chair"),
+    materials: z.string().max(2000).default(''),
+    dimensions: z.string().max(500).default(''),
+    care: z.string().max(1000).default(''),
+    art: z.enum(['chair', 'lamp', 'pendant', 'table', 'sofa', 'vase', 'textile']).default('chair'),
     color: z.string().regex(/^#[a-fA-F0-9]{6}$/),
     background: z.string().regex(/^#[a-fA-F0-9]{6}$/),
-    badge: z.string().max(30).default(""),
-    imageUrl: safeUrl.default(""),
+    badge: z.string().max(30).default(''),
+    imageUrl: safeUrl.default(''),
     featuredRank: z.number().int().min(0).max(1000).default(0),
-    status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
     sku: z.string().trim().min(2).max(60),
-    label: z.string().max(100).default("Standard"),
+    label: z.string().max(100).default('Standard'),
     priceMinor: z.coerce.bigint().min(0n).max(1000000000000n),
     onHand: z.number().int().min(0).max(100000),
     version: z.number().int().optional(),
   })
   .strict();
-admin.get("/products", async (req, res) => {
-  const q = z.string().max(100).catch("").parse(req.query.q);
+admin.get('/products', async (req, res) => {
+  const q = z.string().max(100).catch('').parse(req.query.q);
   res.json({
     data: await prisma.product.findMany({
-      where: q ? { name: { contains: q, mode: "insensitive" } } : {},
+      where: q ? { name: { contains: q, mode: 'insensitive' } } : {},
       include: {
         category: true,
         variants: { include: { prices: true, inventory: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 200,
     }),
   });
 });
-admin.get("/products/:id", async (req, res) => {
+admin.get('/products/:id', async (req, res) => {
   const p = await prisma.product.findUnique({
     where: { id: id.parse(req.params.id) },
     include: {
@@ -418,20 +422,19 @@ admin.get("/products/:id", async (req, res) => {
       variants: { include: { prices: true, inventory: true } },
     },
   });
-  if (!p) fail(404, "NOT_FOUND", "Product not found.");
+  if (!p) fail(404, 'NOT_FOUND', 'Product not found.');
   res.json({ data: p });
 });
-admin.post("/products", async (req, res) => {
+admin.post('/products', async (req, res) => {
   const d = productInput.parse(req.body);
   const { sku, label, priceMinor, onHand, version: _version, ...data } = d;
-  const m = storeConfig.markets.find(
-    (x) => x.id === storeConfig.defaultMarketId,
-  )!;
+  const m = storeConfig.markets.find((x) => x.id === storeConfig.defaultMarketId)!;
   res.status(201).json({
     data: await atomic(async (tx) => {
       const p = await tx.product.create({
         data: {
           ...data,
+          mediaAssetId: await resolveMedia(tx, data.imageUrl),
           variants: {
             create: {
               sku,
@@ -443,23 +446,31 @@ admin.post("/products", async (req, res) => {
                   amountMinor: priceMinor,
                 },
               },
-              inventory: { create: { onHand } },
+              inventory: { create: { onHand: 0 } },
             },
           },
         },
         include: { variants: true },
       });
-      await audit(tx, req.shopSession!.userId!, "PRODUCT_CREATED", p.id);
+      if (onHand)
+        await moveStock(
+          tx,
+          p.variants[0].id,
+          onHand,
+          0,
+          'OPENING_STOCK',
+          randomUUID(),
+          req.shopSession!.userId!,
+        );
+      await audit(tx, req.shopSession!.userId!, 'PRODUCT_CREATED', p.id);
       return p;
     }),
   });
 });
-admin.patch("/products/:id", async (req, res) => {
+admin.patch('/products/:id', async (req, res) => {
   const d = productInput.parse(req.body);
   const { sku, label, priceMinor, onHand, version, ...data } = d;
-  const m = storeConfig.markets.find(
-    (x) => x.id === storeConfig.defaultMarketId,
-  )!;
+  const m = storeConfig.markets.find((x) => x.id === storeConfig.defaultMarketId)!;
   res.json({
     data: await atomic(async (tx) => {
       const productId = id.parse(req.params.id);
@@ -467,19 +478,18 @@ admin.patch("/products/:id", async (req, res) => {
         where: { id: productId },
         include: { variants: { include: { inventory: true } } },
       });
-      if (!p) fail(404, "NOT_FOUND", "Product not found.");
+      if (!p) fail(404, 'NOT_FOUND', 'Product not found.');
       if (version !== p.version)
-        fail(
-          409,
-          "VERSION_CONFLICT",
-          "Another edit changed this product. Reload it first.",
-        );
+        fail(409, 'VERSION_CONFLICT', 'Another edit changed this product. Reload it first.');
       const v = p.variants[0];
-      if (!v)
-        fail(409, "VARIANT_REQUIRED", "Create a purchasable variant first.");
+      if (!v) fail(409, 'VARIANT_REQUIRED', 'Create a purchasable variant first.');
       await tx.product.update({
         where: { id: p.id },
-        data: { ...data, version: { increment: 1 } },
+        data: {
+          ...data,
+          mediaAssetId: await resolveMedia(tx, data.imageUrl),
+          version: { increment: 1 },
+        },
       });
       await tx.productVariant.update({
         where: { id: v.id },
@@ -507,11 +517,11 @@ admin.patch("/products/:id", async (req, res) => {
           v.id,
           onHand - v.inventory.onHand,
           0,
-          "PRODUCT_STOCK_EDIT",
+          'PRODUCT_STOCK_EDIT',
           randomUUID(),
           req.shopSession!.userId!,
         );
-      await audit(tx, req.shopSession!.userId!, "PRODUCT_UPDATED", p.id, {
+      await audit(tx, req.shopSession!.userId!, 'PRODUCT_UPDATED', p.id, {
         version: p.version + 1,
       });
       return tx.product.findUnique({
@@ -521,23 +531,23 @@ admin.patch("/products/:id", async (req, res) => {
     }),
   });
 });
-admin.post("/products/:id/archive", async (req, res) =>
+admin.post('/products/:id/archive', async (req, res) =>
   res.json({
     data: await atomic(async (tx) => {
       const p = await tx.product.update({
         where: { id: id.parse(req.params.id) },
-        data: { status: "ARCHIVED", version: { increment: 1 } },
+        data: { status: 'ARCHIVED', version: { increment: 1 } },
       });
-      await audit(tx, req.shopSession!.userId!, "PRODUCT_ARCHIVED", p.id);
+      await audit(tx, req.shopSession!.userId!, 'PRODUCT_ARCHIVED', p.id);
       return p;
     }),
   }),
 );
-admin.get("/categories", async (_req, res) =>
+admin.get('/categories', async (_req, res) =>
   res.json({
     data: await prisma.category.findMany({
       include: { _count: { select: { products: true } } },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { sortOrder: 'asc' },
     }),
   }),
 );
@@ -548,19 +558,17 @@ const catInput = z
       .string()
       .regex(/^[a-z0-9-]+$/)
       .max(80),
-    description: z.string().max(1000).default(""),
+    description: z.string().max(1000).default(''),
     sortOrder: z.number().int().min(0).max(1000).default(0),
     active: z.boolean().default(true),
   })
   .strict();
-admin.post("/categories", async (req, res) =>
-  res
-    .status(201)
-    .json({
-      data: await prisma.category.create({ data: catInput.parse(req.body) }),
-    }),
+admin.post('/categories', async (req, res) =>
+  res.status(201).json({
+    data: await prisma.category.create({ data: catInput.parse(req.body) }),
+  }),
 );
-admin.patch("/categories/:id", async (req, res) =>
+admin.patch('/categories/:id', async (req, res) =>
   res.json({
     data: await prisma.category.update({
       where: { id: id.parse(req.params.id) },
@@ -568,30 +576,26 @@ admin.patch("/categories/:id", async (req, res) =>
     }),
   }),
 );
-admin.delete("/categories/:id", async (req, res) => {
+admin.delete('/categories/:id', async (req, res) => {
   const categoryId = id.parse(req.params.id);
   if (await prisma.product.count({ where: { categoryId } }))
-    fail(
-      409,
-      "CATEGORY_IN_USE",
-      "Reassign products before removing this category.",
-    );
+    fail(409, 'CATEGORY_IN_USE', 'Reassign products before removing this category.');
   await prisma.category.delete({ where: { id: categoryId } });
   res.json({ data: { ok: true } });
 });
-admin.get("/inventory", async (_req, res) =>
+admin.get('/inventory', async (_req, res) =>
   res.json({
     data: await prisma.inventory.findMany({
       include: {
         variant: { include: { product: true } },
-        movements: { orderBy: { createdAt: "desc" }, take: 5 },
+        movements: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
-      orderBy: { onHand: "asc" },
+      orderBy: { onHand: 'asc' },
       take: 200,
     }),
   }),
 );
-admin.post("/inventory/:id/adjustments", async (req, res) => {
+admin.post('/inventory/:id/adjustments', async (req, res) => {
   const d = z
     .object({
       delta: z.number().int().min(-10000).max(10000),
@@ -604,39 +608,27 @@ admin.post("/inventory/:id/adjustments", async (req, res) => {
     const i = await tx.inventory.findUnique({
       where: { id: id.parse(req.params.id) },
     });
-    if (!i) fail(404, "NOT_FOUND", "Inventory record not found.");
+    if (!i) fail(404, 'NOT_FOUND', 'Inventory record not found.');
     if (i.version !== d.version)
-      fail(
-        409,
-        "VERSION_CONFLICT",
-        "Stock changed. Refresh before adjusting it.",
-      );
-    await moveStock(
-      tx,
-      i.variantId,
-      d.delta,
-      0,
-      d.reason,
-      randomUUID(),
-      req.shopSession!.userId!,
-    );
-    await audit(tx, req.shopSession!.userId!, "STOCK_ADJUSTED", i.id, d);
+      fail(409, 'VERSION_CONFLICT', 'Stock changed. Refresh before adjusting it.');
+    await moveStock(tx, i.variantId, d.delta, 0, d.reason, randomUUID(), req.shopSession!.userId!);
+    await audit(tx, req.shopSession!.userId!, 'STOCK_ADJUSTED', i.id, d);
   });
   res.json({ data: { ok: true } });
 });
-admin.get("/returns", async (_req, res) =>
+admin.get('/returns', async (_req, res) =>
   res.json({
     data: await prisma.returnRequest.findMany({
       include: { order: { include: { items: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     }),
   }),
 );
-admin.post("/returns/:id/decisions", async (req, res) => {
+admin.post('/returns/:id/decisions', async (req, res) => {
   const d = z
     .object({
-      status: z.enum(["APPROVED", "REJECTED"]),
+      status: z.enum(['APPROVED', 'REJECTED']),
       resolution: z.string().min(3).max(1000),
     })
     .parse(req.body);
@@ -645,22 +637,16 @@ admin.post("/returns/:id/decisions", async (req, res) => {
       const r = await tx.returnRequest.findUnique({
         where: { id: id.parse(req.params.id) },
       });
-      if (!r) fail(404, "NOT_FOUND", "Return not found.");
+      if (!r) fail(404, 'NOT_FOUND', 'Return not found.');
       await lockOrder(tx, r.orderId);
-      if (r.status !== "REQUESTED")
-        fail(409, "STATE_CONFLICT", "This return has already been reviewed.");
-      await event(
-        tx,
-        r.orderId,
-        `RETURN_${d.status}`,
-        d.resolution,
-        req.shopSession!.userId!,
-      );
+      if (r.status !== 'REQUESTED')
+        fail(409, 'STATE_CONFLICT', 'This return has already been reviewed.');
+      await event(tx, r.orderId, `RETURN_${d.status}`, d.resolution, req.shopSession!.userId!);
       return tx.returnRequest.update({ where: { id: r.id }, data: d });
     }),
   });
 });
-admin.post("/returns/:id/receipts", async (req, res) => {
+admin.post('/returns/:id/receipts', async (req, res) => {
   const d = z
     .object({ restock: z.boolean(), resolution: z.string().min(3).max(1000) })
     .parse(req.body);
@@ -669,22 +655,20 @@ admin.post("/returns/:id/receipts", async (req, res) => {
       const r = await tx.returnRequest.findUnique({
         where: { id: id.parse(req.params.id) },
       });
-      if (!r) fail(404, "NOT_FOUND", "Return not found.");
+      if (!r) fail(404, 'NOT_FOUND', 'Return not found.');
       const o = await lockOrder(tx, r.orderId);
       const latest = await tx.returnRequest.findUniqueOrThrow({
         where: { id: r.id },
       });
-      if (latest.status !== "APPROVED" || !o)
-        fail(409, "STATE_CONFLICT", "Only approved returns can be received.");
+      if (latest.status !== 'APPROVED' || !o)
+        fail(409, 'STATE_CONFLICT', 'Only approved returns can be received.');
       const items = z
-        .array(
-          z.object({ orderItemId: id, quantity: z.number().int().positive() }),
-        )
+        .array(z.object({ orderItemId: id, quantity: z.number().int().positive() }))
         .parse(r.items);
       for (const line of items) {
         const i = o.items.find((x) => x.id === line.orderItemId);
         if (!i || line.quantity > i.quantity - i.returnedQuantity)
-          fail(409, "RETURN_INELIGIBLE", "Return quantity changed.");
+          fail(409, 'RETURN_INELIGIBLE', 'Return quantity changed.');
         await tx.orderItem.update({
           where: { id: i.id },
           data: { returnedQuantity: { increment: line.quantity } },
@@ -695,7 +679,7 @@ admin.post("/returns/:id/receipts", async (req, res) => {
             i.variantId,
             line.quantity,
             0,
-            "RETURN_RECEIVED",
+            'RETURN_RECEIVED',
             `${r.id}:${i.id}:restock`,
             req.shopSession!.userId!,
           );
@@ -703,30 +687,30 @@ admin.post("/returns/:id/receipts", async (req, res) => {
       await event(
         tx,
         o.id,
-        "RETURN_RECEIVED",
-        "Returned items received and inspected.",
+        'RETURN_RECEIVED',
+        'Returned items received and inspected.',
         req.shopSession!.userId!,
       );
       return tx.returnRequest.update({
         where: { id: r.id },
-        data: { status: "RECEIVED", resolution: d.resolution },
+        data: { status: 'RECEIVED', resolution: d.resolution },
       });
     }),
   });
 });
-admin.get("/reviews", async (_req, res) =>
+admin.get('/reviews', async (_req, res) =>
   res.json({
     data: await prisma.review.findMany({
       include: {
         product: { select: { name: true } },
         user: { select: { name: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     }),
   }),
 );
-admin.patch("/reviews/:id", async (req, res) =>
+admin.patch('/reviews/:id', async (req, res) =>
   res.json({
     data: await prisma.review.update({
       where: { id: id.parse(req.params.id) },
@@ -734,9 +718,9 @@ admin.patch("/reviews/:id", async (req, res) =>
     }),
   }),
 );
-admin.get("/coupons", async (_req, res) =>
+admin.get('/coupons', async (_req, res) =>
   res.json({
-    data: await prisma.coupon.findMany({ orderBy: { code: "asc" } }),
+    data: await prisma.coupon.findMany({ orderBy: { code: 'asc' } }),
   }),
 );
 const couponInput = z
@@ -755,14 +739,12 @@ const couponInput = z
     expiresAt: z.coerce.date().nullable().optional(),
   })
   .strict();
-admin.post("/coupons", async (req, res) =>
-  res
-    .status(201)
-    .json({
-      data: await prisma.coupon.create({ data: couponInput.parse(req.body) }),
-    }),
+admin.post('/coupons', async (req, res) =>
+  res.status(201).json({
+    data: await prisma.coupon.create({ data: couponInput.parse(req.body) }),
+  }),
 );
-admin.patch("/coupons/:id", async (req, res) =>
+admin.patch('/coupons/:id', async (req, res) =>
   res.json({
     data: await prisma.coupon.update({
       where: { id: id.parse(req.params.id) },
@@ -770,15 +752,15 @@ admin.patch("/coupons/:id", async (req, res) =>
     }),
   }),
 );
-admin.get("/content", async (_req, res) =>
+admin.get('/content', async (_req, res) =>
   res.json({
     data: await prisma.contentRevision.findMany({
-      orderBy: [{ key: "asc" }, { revision: "desc" }],
+      orderBy: [{ key: 'asc' }, { revision: 'desc' }],
       take: 100,
     }),
   }),
 );
-admin.post("/content", async (req, res) => {
+admin.post('/content', async (req, res) => {
   const d = z
     .object({
       key: z
@@ -794,7 +776,7 @@ admin.post("/content", async (req, res) => {
     data: await atomic(async (tx) => {
       const old = await tx.contentRevision.findFirst({
         where: { key: d.key },
-        orderBy: { revision: "desc" },
+        orderBy: { revision: 'desc' },
       });
       return tx.contentRevision.create({
         data: { ...d, revision: (old?.revision ?? 0) + 1 },
@@ -802,23 +784,18 @@ admin.post("/content", async (req, res) => {
     }),
   });
 });
-admin.post("/content/:id/publish", async (req, res) =>
+admin.post('/content/:id/publish', async (req, res) =>
   res.json({
     data: await atomic(async (tx) => {
       const revision = await tx.contentRevision.findUnique({
         where: { id: id.parse(req.params.id) },
       });
-      if (!revision) fail(404, "NOT_FOUND", "Content revision not found.");
+      if (!revision) fail(404, 'NOT_FOUND', 'Content revision not found.');
       await tx.contentRevision.updateMany({
         where: { key: revision.key },
         data: { published: false },
       });
-      await audit(
-        tx,
-        req.shopSession!.userId!,
-        "CONTENT_PUBLISHED",
-        revision.id,
-      );
+      await audit(tx, req.shopSession!.userId!, 'CONTENT_PUBLISHED', revision.id);
       return tx.contentRevision.update({
         where: { id: revision.id },
         data: { published: true },
@@ -826,69 +803,61 @@ admin.post("/content/:id/publish", async (req, res) =>
     }),
   }),
 );
-admin.get("/config", (_req, res) =>
+admin.get('/config', (_req, res) =>
   res.json({
     data: {
       config: storeConfig,
       integrations: {
         email: !!process.env.SMTP_HOST,
-        payment: "COMING_SOON",
+        storage: !!process.env.AWS_ENDPOINT_URL_S3,
+        payment: 'COMING_SOON',
         databaseBranch: process.env.NEON_BRANCH,
       },
-      message:
-        "Store variables are managed in versioned JSON. Credentials are environment-only.",
+      message: 'Store variables are managed in versioned JSON. Credentials are environment-only.',
     },
   }),
 );
-admin.get("/audit", async (_req, res) =>
+admin.get('/audit', async (_req, res) =>
   res.json({
     data: await prisma.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     }),
   }),
 );
-admin.get("/notifications", async (_req, res) => {
+admin.get('/notifications', async (_req, res) => {
   const jobs = await prisma.outboxJob.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: 50,
   });
   res.json({
     data: jobs.map((j) => ({
       ...j,
-      payload: storeConfig.mode === "demo" ? j.payload : { redacted: true },
+      payload: storeConfig.mode === 'demo' ? j.payload : { redacted: true },
     })),
   });
 });
-admin.get("/exports/orders", async (req, res) => {
+admin.get('/exports/orders', async (req, res) => {
   const orders = await prisma.order.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: 10000,
   });
   await prisma.auditLog.create({
     data: {
       actorId: req.shopSession!.userId,
-      action: "ORDERS_EXPORTED",
-      target: "orders",
+      action: 'ORDERS_EXPORTED',
+      target: 'orders',
       details: { count: orders.length },
     },
   });
   res
-    .type("text/csv")
-    .attachment("orders.csv")
+    .type('text/csv')
+    .attachment('orders.csv')
     .send(
       [
-        [
-          "Order",
-          "Date",
-          "Email",
-          "Status",
-          "Payment",
-          "Currency",
-          "Total minor units",
-        ]
+        ['Order', 'Date', 'Email', 'Status', 'Payment', 'Currency', 'Total minor units']
           .map(csvCell)
-          .join(","),
+          .join(','),
         ...orders.map((o) =>
           [
             o.number,
@@ -900,8 +869,117 @@ admin.get("/exports/orders", async (req, res) => {
             o.totalMinor.toString(),
           ]
             .map(csvCell)
-            .join(","),
+            .join(','),
         ),
-      ].join("\n"),
+      ].join('\n'),
     );
+});
+
+admin.put('/variants/:id/prices', async (req, res) => {
+  const d = z
+    .object({
+      marketId: z.string(),
+      currency: z.string().length(3),
+      amountMinor: z.coerce.bigint().nonnegative().max(1000000000000n),
+    })
+    .strict()
+    .parse(req.body);
+  const m = storeConfig.markets.find(
+    (m) => m.enabled && m.id === d.marketId && m.currency === d.currency,
+  );
+  if (!m) fail(422, 'MARKET_INVALID', 'Choose a configured market and currency.');
+  const variantId = id.parse(req.params.id);
+  res.json({
+    data: await atomic(async (tx) => {
+      const p = await tx.price.upsert({
+        where: { variantId_marketId_currency: { variantId, marketId: m.id, currency: m.currency } },
+        create: { variantId, ...d },
+        update: { amountMinor: d.amountMinor },
+      });
+      await audit(tx, req.shopSession!.userId!, 'PRICE_BOOK_UPDATED', variantId, {
+        ...d,
+        amountMinor: d.amountMinor.toString(),
+      });
+      return p;
+    }),
+  });
+});
+admin.post('/notifications/:id/retry', async (req, res) => {
+  res.json({
+    data: await atomic(async (tx) => {
+      const job = await tx.outboxJob.findUnique({ where: { id: id.parse(req.params.id) } });
+      if (!job || job.status !== 'FAILED')
+        fail(409, 'STATE_CONFLICT', 'Only failed deliveries can be retried.');
+      await audit(tx, req.shopSession!.userId!, 'NOTIFICATION_RETRIED', job.id);
+      return tx.outboxJob.update({
+        where: { id: job.id },
+        data: {
+          status: 'PENDING',
+          attempts: 0,
+          error: null,
+          leaseUntil: null,
+          availableAt: new Date(),
+        },
+      });
+    }),
+  });
+});
+
+admin.use('/media', media);
+
+async function resolveMedia(tx: import('../services/core.js').Tx, url: string) {
+  if (!url.startsWith('/media/')) return null;
+  const asset = await tx.mediaAsset.findUnique({ where: { url } });
+  if (!asset) fail(422, 'IMAGE_INVALID', 'Choose an existing image from the media library.');
+  return asset.id;
+}
+
+admin.post('/products/:id/variants', async (req, res) => {
+  const d = z
+    .object({
+      sku: z.string().min(2).max(60),
+      label: z.string().min(2).max(100),
+      onHand: z.number().int().min(0).max(100000),
+      priceMinor: z.coerce.bigint().nonnegative().max(1000000000000n),
+    })
+    .strict()
+    .parse(req.body);
+  const market = storeConfig.markets.find((m) => m.id === storeConfig.defaultMarketId)!;
+  res.status(201).json({
+    data: await atomic(async (tx) => {
+      const variant = await tx.productVariant.create({
+        data: {
+          productId: id.parse(req.params.id),
+          sku: d.sku,
+          label: d.label,
+          prices: {
+            create: { marketId: market.id, currency: market.currency, amountMinor: d.priceMinor },
+          },
+          inventory: { create: { onHand: 0 } },
+        },
+      });
+      if (d.onHand)
+        await moveStock(
+          tx,
+          variant.id,
+          d.onHand,
+          0,
+          'OPENING_STOCK',
+          randomUUID(),
+          req.shopSession!.userId!,
+        );
+      await audit(tx, req.shopSession!.userId!, 'VARIANT_CREATED', variant.id);
+      return variant;
+    }),
+  });
+});
+admin.patch('/variants/:id', async (req, res) => {
+  const d = z.object({ active: z.boolean() }).strict().parse(req.body);
+  res.json({
+    data: await atomic(async (tx) => {
+      const v = await tx.productVariant.update({ where: { id: id.parse(req.params.id) }, data: d });
+      await audit(tx, req.shopSession!.userId!, 'VARIANT_AVAILABILITY_UPDATED', v.id, d);
+      return v;
+    }),
+  });
 });

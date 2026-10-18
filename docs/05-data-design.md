@@ -1,5 +1,7 @@
 # Database and transaction design
 
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+
 ## Modeling rules
 
 Use PostgreSQL foreign keys and Prisma models with UUID primary keys, UTC timestamps, explicit indexes and restricted deletion for financial history. Use BigInt minor units for stored money and serialize it as a decimal string in API responses. Currency is an ISO currency code stored on every price, quote, order, payment and refund. Currency decimal places come from the validated store profile. Never use JavaScript floating-point arithmetic for financial totals.

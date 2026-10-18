@@ -9,6 +9,8 @@ model Product {
   art String @default("chair")
   color String @default("#cbd4bf")
   background String @default("#e3e7db")
+  mediaAssetId String? @db.Uuid
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
   imageUrl String @default("")
   badge String @default("")
   status ProductStatus @default(DRAFT)

@@ -1,0 +1,2 @@
+ALTER TABLE "MediaAsset" ADD COLUMN "objectKey" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "MediaAsset" ADD COLUMN "bucket" TEXT NOT NULL DEFAULT 'assets';

@@ -1,5 +1,7 @@
 # Product requirements
 
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+
 ## Purpose and outcome
 
 Build a furniture and homewares commerce platform that reproduces the supplied video's storefront and admin visual language. Customers browse products, manage a bag, pay by card or cash on delivery, and track purchases. A main admin manages the catalog, stock, orders, content, and store operations. React renders both experiences, Express owns business rules, and Prisma accesses PostgreSQL hosted by Neon.

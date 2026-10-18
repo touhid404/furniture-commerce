@@ -1,5 +1,7 @@
 # Delivery plan and acceptance
 
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+
 ## Phases and dependencies
 
 | Phase | Deliverables | Completion evidence |
@@ -23,7 +25,7 @@ Phases are dependency ordering, not promised calendar estimates. The Neon founda
 | R03 requested stack | React, Express, Prisma/Postgres | Production build and API DB query |
 | R04 Neon | Environment loader and Prisma adapter | Real connection and rollback test |
 | R05 JSON reuse | Schema, loader, public allowlist | Alternate profile; no hardcoded currency |
-| R06 card and COD | Checkout, webhooks, collections | Both full payment lifecycles |
+| R06 card and COD | Checkout, webhooks, collections | COD lifecycle; card scenarios deferred |
 | R07 production scope | Fulfillment, returns, monitoring, recovery | Operational launch scenarios |
 | R08 unseen screens | Details, checkout and CRUD style | Usability and consistency review |
 | R09 professional GitHub | Branches, templates, checks and releases | Verified private repo and passing CI |
@@ -42,9 +44,9 @@ Phases are dependency ordering, not promised calendar estimates. The Neon founda
 | A08 | Two buyers request final SKU | Exactly one reservation succeeds; stock stays valid |
 | A09 | Order request is retried | One order, one reservation, same response reference |
 | A10 | Browser tampers with price | Server ignores supplied price and recalculates |
-| A11 | Card return before webhook | Order remains pending until trusted confirmation |
-| A12 | Duplicate/out-of-order webhook | One financial effect; paid state cannot regress |
-| A13 | Late card payment after stock release | Stock is rechecked or exception/refund path occurs |
+| A11 | Deferred: card return before webhook | Order remains pending until trusted confirmation |
+| A12 | Deferred: duplicate/out-of-order webhook | One financial effect; paid state cannot regress |
+| A13 | Deferred: late card payment after stock release | Stock is rechecked or exception/refund path occurs |
 | A14 | COD order delivered | Allocated stock ships; receipt recorded independently |
 | A15 | Cancel races with shipping | Only compatible state transition succeeds |
 | A16 | Partial return/refund retry | Correct saved allocation, no excess refund or double restock |

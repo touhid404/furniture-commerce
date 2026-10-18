@@ -32,6 +32,27 @@ elif mode=='milestone-pr':
  if existing:pr=existing[0]
  else:pr=call('POST','/pulls',{'title':'Implement the commerce platform in frontend and backend workspaces','body':body,'head':head,'base':'main','draft':True})
  print(json.dumps({'number':pr['number'],'url':pr['html_url'],'state':pr['state'],'draft':pr['draft']}))
+elif mode=='open-state':
+ items=call('GET','/issues?state=all&per_page=100')
+ print(json.dumps([{'number':i['number'],'title':i['title'],'state':i['state'],'pull_request':'pull_request' in i} for i in items]))
+elif mode=='pr-state':
+ number=sys.argv[2]
+ pr=call('GET','/pulls/'+number)
+ reviews=call('GET','/pulls/'+number+'/reviews')
+ comments=call('GET','/issues/'+number+'/comments')
+ inline=call('GET','/pulls/'+number+'/comments')
+ checks=call('GET','/commits/'+pr['head']['sha']+'/check-runs')
+ print(json.dumps({'number':pr['number'],'state':pr['state'],'draft':pr['draft'],'mergeable':pr['mergeable'],'mergeable_state':pr['mergeable_state'],'sha':pr['head']['sha'],'reviews':[{'state':r['state'],'body':r['body']} for r in reviews],'comments':[{'id':c['id'],'body':c['body']} for c in comments],'inline':[{'id':c['id'],'path':c['path'],'body':c['body']} for c in inline],'checks':[{'name':c['name'],'conclusion':c['conclusion']} for c in checks['check_runs']]}))
+elif mode=='update-pr':
+ body=Path(sys.argv[3]).read_text()
+ pr=call('PATCH','/pulls/'+sys.argv[2],{'title':'Complete the reference commerce storefront, admin and Neon services','body':body})
+ print(json.dumps({'number':pr['number'],'url':pr['html_url']}))
+elif mode=='update-issue':
+ body=Path(sys.argv[3]).read_text()
+ data={'body':body}
+ if len(sys.argv)>4:data['title']=sys.argv[4]
+ issue=call('PATCH','/issues/'+sys.argv[2],data)
+ print(json.dumps({'number':issue['number'],'state':issue['state']}))
 elif mode=='runs':
  from urllib.parse import quote
  branch=sys.argv[2] if len(sys.argv)>2 else 'feat/documentation-and-neon-foundation'

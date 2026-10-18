@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Furniture Commerce critical flow contract",
-    "version": "0.1.0",
-    "description": "Design contract for the critical shopping flow, not a complete implementation. Only config and readiness operations are implemented in the current foundation. Full route inventory is in docs/06-api-specification.md."
+    "title": "Furniture Commerce API",
+    "version": "1.0.0",
+    "description": "Implemented React/Express commerce API. COD is the only active payment method; SSLCommerz is deferred. Mutations require an opaque session cookie and X-CSRF-Token. Start with GET /auth/csrf. Admin operations require ADMIN and MFA in production. Money is serialized as integer minor-unit strings. Responses may include a pagination meta object."
   },
   "servers": [
     {
@@ -11,11 +11,94 @@
     }
   ],
   "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "get_health_live",
+        "summary": "GET /health/live",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "get_health_ready",
+        "summary": "GET /health/ready",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/config": {
       "get": {
-        "summary": "Read allowlisted store configuration",
-        "description": "Implemented by the foundation. Never returns backend credentials or private operational configuration.",
         "operationId": "get_config",
+        "summary": "GET /config",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "config"
+        ],
         "security": [],
         "responses": {
           "200": {
@@ -32,52 +115,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/health/ready": {
-      "get": {
-        "summary": "Check API database readiness",
-        "description": "Implemented by the foundation. Executes a read-only PostgreSQL query via Prisma. Failure returns 503; response contains no credentials.",
-        "operationId": "get_health_ready",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Readiness"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -91,9 +135,12 @@
     },
     "/auth/csrf": {
       "get": {
-        "summary": "Create anonymous session and CSRF token",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "get_auth_csrf",
+        "summary": "GET /auth/csrf",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
         "security": [],
         "responses": {
           "200": {
@@ -103,29 +150,1107 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "csrfToken": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "csrfToken"
-                      ],
-                      "additionalProperties": false
-                    }
+                    "data": {}
                   },
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "get_auth_me",
+        "summary": "GET /auth/me",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "post_auth_register",
+        "summary": "POST /auth/register",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 128
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "post_auth_login",
+        "summary": "POST /auth/login",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/demo": {
+      "post": {
+        "operationId": "post_auth_demo",
+        "summary": "POST /auth/demo",
+        "description": "Demo-only endpoint. Returns 404 in production.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "post_auth_logout",
+        "summary": "POST /auth/logout",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "post_auth_forgot_password",
+        "summary": "POST /auth/forgot-password",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "post_auth_reset_password",
+        "summary": "POST /auth/reset-password",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "post_auth_verify_email",
+        "summary": "POST /auth/verify-email",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/order-access/request": {
+      "post": {
+        "operationId": "post_auth_order_access_request",
+        "summary": "POST /auth/order-access/request",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/order-access/consume": {
+      "post": {
+        "operationId": "post_auth_order_access_consume",
+        "summary": "POST /auth/order-access/consume",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "operationId": "get_account",
+        "summary": "GET /account",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch_account",
+        "summary": "PATCH /account",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/addresses": {
+      "get": {
+        "operationId": "get_account_addresses",
+        "summary": "GET /account/addresses",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_account_addresses",
+        "summary": "POST /account/addresses",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/addresses/{id}": {
+      "delete": {
+        "operationId": "delete_account_addresses_id",
+        "summary": "DELETE /account/addresses/{id}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/account/mfa/setup": {
+      "post": {
+        "operationId": "post_account_mfa_setup",
+        "summary": "POST /account/mfa/setup",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/mfa/enable": {
+      "post": {
+        "operationId": "post_account_mfa_enable",
+        "summary": "POST /account/mfa/enable",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "get_categories",
+        "summary": "GET /categories",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "categories"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -139,9 +1264,12 @@
     },
     "/products": {
       "get": {
-        "summary": "List published products",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "get_products",
+        "summary": "GET /products",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "products"
+        ],
         "security": [],
         "responses": {
           "200": {
@@ -156,34 +1284,18 @@
                       "items": {
                         "$ref": "#/components/schemas/Product"
                       }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "nextCursor": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "nextCursor"
-                      ],
-                      "additionalProperties": false
                     }
                   },
                   "required": [
-                    "data",
-                    "meta"
+                    "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -195,17 +1307,8 @@
         },
         "parameters": [
           {
-            "name": "marketId",
+            "name": "q",
             "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -213,23 +1316,20 @@
           {
             "name": "category",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "q",
+            "name": "sort",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "cursor",
+            "name": "page",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "string"
             }
@@ -237,25 +1337,43 @@
           {
             "name": "limit",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 48
+              "type": "string"
             }
           },
           {
-            "name": "sort",
+            "name": "marketId",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "string",
-              "enum": [
-                "featured",
-                "price-asc",
-                "price-desc",
-                "newest"
-              ]
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minPriceMinor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPriceMinor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ]
@@ -263,9 +1381,12 @@
     },
     "/products/{slug}": {
       "get": {
-        "summary": "Read published product details",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "get_products_slug",
+        "summary": "GET /products/{slug}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "products"
+        ],
         "security": [],
         "responses": {
           "200": {
@@ -282,13 +1403,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -306,18 +1427,52 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "marketId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
+          }
+        ]
+      }
+    },
+    "/content/{key}": {
+      "get": {
+        "operationId": "get_content_key",
+        "summary": "GET /content/{key}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "content"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
             }
           },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
           {
-            "name": "currency",
-            "in": "query",
+            "name": "key",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string"
@@ -326,16 +1481,88 @@
         ]
       }
     },
-    "/cart": {
-      "get": {
-        "summary": "Read current session bag",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
-        "operationId": "get_cart",
+    "/order-items/{id}/reviews": {
+      "post": {
+        "operationId": "post_order_items_id_reviews",
+        "summary": "POST /order-items/{id}/reviews",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "order-items"
+        ],
         "security": [
           {
             "SessionCookie": []
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart": {
+      "get": {
+        "operationId": "get_cart",
+        "summary": "GET /cart",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success",
@@ -351,13 +1578,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -371,9 +1598,12 @@
     },
     "/cart/items": {
       "post": {
-        "summary": "Add a SKU to the bag",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "post_cart_items",
+        "summary": "POST /cart/items",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
         "security": [
           {
             "SessionCookie": []
@@ -394,13 +1624,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -416,8 +1646,7 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "minLength": 16
+              "type": "string"
             }
           }
         ],
@@ -435,14 +1664,14 @@
                   "quantity": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 999
+                    "maximum": 10
                   }
                 },
                 "required": [
                   "variantId",
                   "quantity"
                 ],
-                "additionalProperties": false
+                "additionalProperties": true
               }
             }
           }
@@ -451,9 +1680,12 @@
     },
     "/cart/items/{id}": {
       "patch": {
-        "summary": "Set bag item quantity",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "patch_cart_items_id",
+        "summary": "PATCH /cart/items/{id}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
         "security": [
           {
             "SessionCookie": []
@@ -474,13 +1706,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -505,8 +1737,7 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "minLength": 16
+              "type": "string"
             }
           }
         ],
@@ -520,22 +1751,25 @@
                   "quantity": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 999
+                    "maximum": 10
                   }
                 },
                 "required": [
                   "quantity"
                 ],
-                "additionalProperties": false
+                "additionalProperties": true
               }
             }
           }
         }
       },
       "delete": {
-        "summary": "Remove bag item",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "delete_cart_items_id",
+        "summary": "DELETE /cart/items/{id}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
         "security": [
           {
             "SessionCookie": []
@@ -556,13 +1790,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -587,8 +1821,205 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "minLength": 16
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/cart/context": {
+      "patch": {
+        "operationId": "patch_cart_context",
+        "summary": "PATCH /cart/context",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "marketId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "marketId"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/coupon": {
+      "post": {
+        "operationId": "post_cart_coupon",
+        "summary": "POST /cart/coupon",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_cart_coupon",
+        "summary": "DELETE /cart/coupon",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "cart"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
         ]
@@ -596,9 +2027,12 @@
     },
     "/checkout/quotes": {
       "post": {
-        "summary": "Validate checkout and quote current bag",
-        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
         "operationId": "post_checkout_quotes",
+        "summary": "POST /checkout/quotes",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "checkout"
+        ],
         "security": [
           {
             "SessionCookie": []
@@ -619,13 +2053,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -641,8 +2075,7 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "minLength": 16
+              "type": "string"
             }
           }
         ],
@@ -653,34 +2086,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "marketId": {
-                    "type": "string"
-                  },
-                  "currency": {
-                    "type": "string"
+                  "contactEmail": {
+                    "type": "string",
+                    "format": "email"
                   },
                   "shippingAddress": {
                     "$ref": "#/components/schemas/Address"
                   },
                   "shippingMethodId": {
                     "type": "string"
-                  },
-                  "contactEmail": {
-                    "type": "string",
-                    "format": "email"
-                  },
-                  "couponCode": {
-                    "type": "string"
                   }
                 },
                 "required": [
-                  "marketId",
-                  "currency",
-                  "shippingAddress",
-                  "shippingMethodId",
-                  "contactEmail"
+                  "contactEmail",
+                  "shippingAddress"
                 ],
-                "additionalProperties": false
+                "additionalProperties": true
               }
             }
           }
@@ -689,9 +2110,12 @@
     },
     "/checkout/orders": {
       "post": {
-        "summary": "Submit a quote and begin payment",
-        "description": "Planned. Transaction rechecks quote and stock, snapshots order and writes outbox. Retry same scoped key and request fingerprint returns the original result; changed fingerprint returns 409. Card return URLs cannot confirm payment.",
         "operationId": "post_checkout_orders",
+        "summary": "POST /checkout/orders",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "checkout"
+        ],
         "security": [
           {
             "SessionCookie": []
@@ -712,13 +2136,13 @@
                   "required": [
                     "data"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": true
                 }
               }
             }
           },
           "default": {
-            "description": "Structured error",
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
             "content": {
               "application/json": {
                 "schema": {
@@ -730,6 +2154,14 @@
         },
         "parameters": [
           {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
@@ -737,15 +2169,6 @@
               "type": "string",
               "minLength": 16,
               "maxLength": 128
-            }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16
             }
           }
         ],
@@ -761,11 +2184,7 @@
                     "format": "uuid"
                   },
                   "paymentMethod": {
-                    "type": "string",
-                    "enum": [
-                      "CARD",
-                      "COD"
-                    ]
+                    "const": "COD"
                   }
                 },
                 "required": [
@@ -778,6 +2197,2845 @@
           }
         }
       }
+    },
+    "/orders": {
+      "get": {
+        "operationId": "get_orders",
+        "summary": "GET /orders",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "orders"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "operationId": "get_orders_id",
+        "summary": "GET /orders/{id}",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "orders"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/orders/{id}/cancellations": {
+      "post": {
+        "operationId": "post_orders_id_cancellations",
+        "summary": "POST /orders/{id}/cancellations",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/returns": {
+      "post": {
+        "operationId": "post_orders_id_returns",
+        "summary": "POST /orders/{id}/returns",
+        "description": "Implemented endpoint. See the operator guide and validated DTOs in the backend modules.",
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "operationId": "get_admin_dashboard",
+        "summary": "GET /admin/dashboard",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders": {
+      "get": {
+        "operationId": "get_admin_orders",
+        "summary": "GET /admin/orders",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}": {
+      "get": {
+        "operationId": "get_admin_orders_id",
+        "summary": "GET /admin/orders/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/orders/{id}/processing": {
+      "post": {
+        "operationId": "post_admin_orders_id_processing",
+        "summary": "POST /admin/orders/{id}/processing",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/cancellations": {
+      "post": {
+        "operationId": "post_admin_orders_id_cancellations",
+        "summary": "POST /admin/orders/{id}/cancellations",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/shipments": {
+      "post": {
+        "operationId": "post_admin_orders_id_shipments",
+        "summary": "POST /admin/orders/{id}/shipments",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "carrier": {
+                    "type": "string"
+                  },
+                  "tracking": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "carrier",
+                  "tracking"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/delivery": {
+      "post": {
+        "operationId": "post_admin_orders_id_delivery",
+        "summary": "POST /admin/orders/{id}/delivery",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/cod-collections": {
+      "post": {
+        "operationId": "post_admin_orders_id_cod_collections",
+        "summary": "POST /admin/orders/{id}/cod-collections",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/refunds": {
+      "post": {
+        "operationId": "post_admin_orders_id_refunds",
+        "summary": "POST /admin/orders/{id}/refunds",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "amountMinor",
+                  "reason",
+                  "reference"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/products": {
+      "get": {
+        "operationId": "get_admin_products",
+        "summary": "GET /admin/products",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_products",
+        "summary": "POST /admin/products",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/products/{id}": {
+      "get": {
+        "operationId": "get_admin_products_id",
+        "summary": "GET /admin/products/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patch_admin_products_id",
+        "summary": "PATCH /admin/products/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/products/{id}/archive": {
+      "post": {
+        "operationId": "post_admin_products_id_archive",
+        "summary": "POST /admin/products/{id}/archive",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/categories": {
+      "get": {
+        "operationId": "get_admin_categories",
+        "summary": "GET /admin/categories",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_categories",
+        "summary": "POST /admin/categories",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/categories/{id}": {
+      "patch": {
+        "operationId": "patch_admin_categories_id",
+        "summary": "PATCH /admin/categories/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_admin_categories_id",
+        "summary": "DELETE /admin/categories/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/inventory": {
+      "get": {
+        "operationId": "get_admin_inventory",
+        "summary": "GET /admin/inventory",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/inventory/{id}/adjustments": {
+      "post": {
+        "operationId": "post_admin_inventory_id_adjustments",
+        "summary": "POST /admin/inventory/{id}/adjustments",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "delta": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "delta",
+                  "reason",
+                  "version"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/returns": {
+      "get": {
+        "operationId": "get_admin_returns",
+        "summary": "GET /admin/returns",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/returns/{id}/decisions": {
+      "post": {
+        "operationId": "post_admin_returns_id_decisions",
+        "summary": "POST /admin/returns/{id}/decisions",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/returns/{id}/receipts": {
+      "post": {
+        "operationId": "post_admin_returns_id_receipts",
+        "summary": "POST /admin/returns/{id}/receipts",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reviews": {
+      "get": {
+        "operationId": "get_admin_reviews",
+        "summary": "GET /admin/reviews",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reviews/{id}": {
+      "patch": {
+        "operationId": "patch_admin_reviews_id",
+        "summary": "PATCH /admin/reviews/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/coupons": {
+      "get": {
+        "operationId": "get_admin_coupons",
+        "summary": "GET /admin/coupons",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_coupons",
+        "summary": "POST /admin/coupons",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/coupons/{id}": {
+      "patch": {
+        "operationId": "patch_admin_coupons_id",
+        "summary": "PATCH /admin/coupons/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/content": {
+      "get": {
+        "operationId": "get_admin_content",
+        "summary": "GET /admin/content",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_content",
+        "summary": "POST /admin/content",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/content/{id}/publish": {
+      "post": {
+        "operationId": "post_admin_content_id_publish",
+        "summary": "POST /admin/content/{id}/publish",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/config": {
+      "get": {
+        "operationId": "get_admin_config",
+        "summary": "GET /admin/config",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/audit": {
+      "get": {
+        "operationId": "get_admin_audit",
+        "summary": "GET /admin/audit",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/notifications": {
+      "get": {
+        "operationId": "get_admin_notifications",
+        "summary": "GET /admin/notifications",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/exports/orders": {
+      "get": {
+        "operationId": "get_admin_exports_orders",
+        "summary": "GET /admin/exports/orders",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV download with formula-safe cells",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/variants/{id}/prices": {
+      "put": {
+        "operationId": "put_admin_variants_id_prices",
+        "summary": "PUT /admin/variants/{id}/prices",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/notifications/{id}/retry": {
+      "post": {
+        "operationId": "post_admin_notifications_id_retry",
+        "summary": "POST /admin/notifications/{id}/retry",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/products/{id}/variants": {
+      "post": {
+        "operationId": "post_admin_products_id_variants",
+        "summary": "POST /admin/products/{id}/variants",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/variants/{id}": {
+      "patch": {
+        "operationId": "patch_admin_variants_id",
+        "summary": "PATCH /admin/variants/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/media": {
+      "get": {
+        "operationId": "get_admin_media",
+        "summary": "GET /admin/media",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_admin_media",
+        "summary": "POST /admin/media",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "contentEncoding": "binary",
+                "description": "Raw image bytes, maximum 2 MB. X-File-Name supplies the encoded original name."
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "contentEncoding": "binary",
+                "description": "Raw image bytes, maximum 2 MB. X-File-Name supplies the encoded original name."
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "contentEncoding": "binary",
+                "description": "Raw image bytes, maximum 2 MB. X-File-Name supplies the encoded original name."
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/media/{id}": {
+      "delete": {
+        "operationId": "delete_admin_media_id",
+        "summary": "DELETE /admin/media/{id}",
+        "description": "Administrator only. State transitions and stock changes are checked server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {}
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error (validation, authentication, state conflict or dependency failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -785,8 +5043,8 @@
       "SessionCookie": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "__Host-shop_session",
-        "description": "Opaque anonymous or account session. Not implemented in the connectivity foundation."
+        "name": "kvist_session",
+        "description": "Demo/development cookie. Production uses Secure HttpOnly __Host-kvist_session."
       }
     },
     "schemas": {
@@ -875,10 +5133,14 @@
         "required": [
           "recipient",
           "line1",
+          "line2",
           "city",
-          "country"
+          "region",
+          "postalCode",
+          "country",
+          "phone"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Variant": {
         "type": "object",
@@ -890,27 +5152,25 @@
           "sku": {
             "type": "string"
           },
-          "options": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
+          "label": {
+            "type": "string"
           },
-          "price": {
-            "$ref": "#/components/schemas/Money"
+          "priceMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
           "available": {
-            "type": "boolean"
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "sku",
-          "options",
-          "price",
+          "label",
+          "priceMinor",
           "available"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Product": {
         "type": "object",
@@ -928,19 +5188,32 @@
           "description": {
             "type": "string"
           },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
+          "art": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
           },
           "imageUrl": {
-            "type": "string",
-            "format": "uri-reference"
+            "type": "string"
           },
           "variants": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Variant"
             }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reviewCount": {
+            "type": "integer"
           }
         },
         "required": [
@@ -948,11 +5221,15 @@
           "slug",
           "name",
           "description",
-          "categoryId",
+          "art",
+          "color",
+          "background",
           "imageUrl",
-          "variants"
+          "variants",
+          "rating",
+          "reviewCount"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "CartItem": {
         "type": "object",
@@ -971,13 +5248,14 @@
           "quantity": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 999
+            "maximum": 100
           },
-          "unitPrice": {
-            "$ref": "#/components/schemas/Money"
+          "unitPriceMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "lineTotal": {
-            "$ref": "#/components/schemas/Money"
+          "purchasable": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -985,10 +5263,10 @@
           "variantId",
           "name",
           "quantity",
-          "unitPrice",
-          "lineTotal"
+          "unitPriceMinor",
+          "purchasable"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Cart": {
         "type": "object",
@@ -997,15 +5275,14 @@
             "type": "string",
             "format": "uuid"
           },
+          "version": {
+            "type": "integer"
+          },
           "marketId": {
             "type": "string"
           },
           "currency": {
             "type": "string"
-          },
-          "version": {
-            "type": "integer",
-            "minimum": 1
           },
           "items": {
             "type": "array",
@@ -1013,58 +5290,60 @@
               "$ref": "#/components/schemas/CartItem"
             }
           },
-          "subtotal": {
-            "$ref": "#/components/schemas/Money"
+          "subtotalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "warnings": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "couponCode": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
+          "version",
           "marketId",
           "currency",
-          "version",
           "items",
-          "subtotal",
-          "warnings"
+          "subtotalMinor",
+          "couponCode"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Totals": {
         "type": "object",
         "properties": {
-          "subtotal": {
-            "$ref": "#/components/schemas/Money"
+          "subtotalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "discount": {
-            "$ref": "#/components/schemas/Money"
+          "discountMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "shipping": {
-            "$ref": "#/components/schemas/Money"
+          "shippingMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "tax": {
-            "$ref": "#/components/schemas/Money"
+          "taxMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          "taxIncluded": {
-            "type": "boolean"
-          },
-          "grandTotal": {
-            "$ref": "#/components/schemas/Money"
+          "totalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           }
         },
         "required": [
-          "subtotal",
-          "discount",
-          "shipping",
-          "tax",
-          "taxIncluded",
-          "grandTotal"
+          "subtotalMinor",
+          "discountMinor",
+          "shippingMinor",
+          "taxMinor",
+          "totalMinor"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Quote": {
         "type": "object",
@@ -1084,18 +5363,11 @@
           "configRevision": {
             "type": "string"
           },
+          "currency": {
+            "type": "string"
+          },
           "totals": {
             "$ref": "#/components/schemas/Totals"
-          },
-          "availablePaymentMethods": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "CARD",
-                "COD"
-              ]
-            }
           }
         },
         "required": [
@@ -1103,58 +5375,59 @@
           "cartId",
           "expiresAt",
           "configRevision",
-          "totals",
-          "availablePaymentMethods"
+          "currency",
+          "totals"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "OrderSubmission": {
         "type": "object",
         "properties": {
-          "orderId": {
+          "id": {
             "type": "string",
             "format": "uuid"
           },
-          "orderNumber": {
+          "number": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fulfillment": {
             "type": "string"
           },
           "paymentStatus": {
-            "type": "string",
-            "enum": [
-              "UNPAID",
-              "PENDING",
-              "PAID"
-            ]
+            "type": "string"
           },
-          "nextAction": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "const": "REDIRECT"
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              },
-              "expiresAt": {
-                "type": "string",
-                "format": "date-time"
-              }
-            },
-            "required": [
-              "type",
-              "url",
-              "expiresAt"
-            ],
-            "additionalProperties": false
+          "currency": {
+            "type": "string"
+          },
+          "totalMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
-          "orderId",
-          "orderNumber",
-          "paymentStatus"
+          "id",
+          "number",
+          "email",
+          "status",
+          "fulfillment",
+          "paymentStatus",
+          "currency",
+          "totalMinor",
+          "items"
         ],
-        "additionalProperties": false
+        "additionalProperties": true
       },
       "Readiness": {
         "type": "object",
@@ -1472,6 +5745,9 @@
                 "errorNote": {
                   "type": "string",
                   "maxLength": 5000
+                },
+                "onlinePaymentComingSoon": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -1487,7 +5763,7 @@
                 "readyNote",
                 "errorNote"
               ],
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "minProperties": 1
           },
@@ -1510,6 +5786,57 @@
               "shippingConfigured"
             ],
             "additionalProperties": false
+          },
+          "checkout": {
+            "type": "object",
+            "properties": {
+              "guestEnabled": {
+                "type": "boolean"
+              },
+              "codEnabled": {
+                "type": "boolean"
+              },
+              "onlinePaymentLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "guestEnabled",
+              "codEnabled",
+              "onlinePaymentLabel"
+            ],
+            "additionalProperties": true
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "windowDays": {
+                "type": "integer"
+              },
+              "cancellationCutoff": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "windowDays",
+              "cancellationCutoff"
+            ],
+            "additionalProperties": true
+          },
+          "dashboard": {
+            "type": "object",
+            "properties": {
+              "pollSeconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "pollSeconds"
+            ],
+            "additionalProperties": true
+          },
+          "demo": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1529,6 +5856,10 @@
           "capabilities"
         ],
         "additionalProperties": false
+      },
+      "MinorUnits": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
       }
     }
   }

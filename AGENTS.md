@@ -13,3 +13,5 @@ Run checks appropriate to the change. `npm run build`, `npm test`, `npm run chec
 Use root folders named `frontend/` and `backend/`. Prisma lives in `backend/prisma/schema/`, with one model file per table under `models/`; the main file contains only generator and datasource declarations.
 
 Current payment scope is cash on delivery only. Show online payments as coming soon; defer SSLCommerz integration. Commit and push each verified milestone to the feature branch. Merge into `main` only after the full project and acceptance checks are complete.
+
+The owner has authorized consolidating the finished app onto the existing Neon `production` branch, including reviewed forward migrations and the `assets` bucket, then removing only the temporary development branch created for this task after verification. Preserve existing production data and objects. Keep exactly one root local environment file, `.env.local`; never commit it. Subsequent fixture tests must use a temporary isolated branch and must refuse production writes.

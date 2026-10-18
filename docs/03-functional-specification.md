@@ -1,5 +1,7 @@
 # Functional specification
 
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+
 ## Customer routes
 
 | Route | Screen | Behavior | Basis |
@@ -7,15 +9,15 @@
 | `/` | Home | Hero, featured product, category and delivery tiles | V01 |
 | `/shop` | Catalog | Category pills, cards, quick add, search, sorting | V02 and extensions |
 | `/products/:slug` | Product | Gallery, variants, price, dimensions, availability | Proposed |
-| `/auth` | Authentication | Sign in and create account tabs | V03 |
+| `/sign-in` | Authentication | Sign in and create account tabs | V03 |
 | `/forgot-password` | Recovery | Generic acknowledgement and reset email | Proposed |
 | `/reset-password` | Password reset | Expiring single-use token | Proposed |
 | `/verify-email` | Email verification | Consume verification token | Proposed |
 | `/bag` | Bag | Quantity, removal, availability and totals | Proposed |
 | `/checkout` | Checkout | Address, shipping, payment and review | Proposed |
-| `/orders/:id/confirmation` | Confirmation | Reference and actual payment status | Proposed |
+| `/orders/:id?confirmed=1` | Confirmation | Reference and actual payment status | Proposed |
 | `/account` | Account | Profile, saved addresses and order list | Proposed |
-| `/account/orders/:id` | Order | Timeline, shipment, cancellation and returns | Proposed |
+| `/orders/:id` | Order | Timeline, shipment, cancellation and returns | Proposed |
 | `/order-access` | Guest access | Request private order-access email | Proposed |
 | `/policies/:slug` | Policies | Shipping, returns, privacy and terms | Proposed |
 | `/contact` | Contact | Configured support details | Proposed |
@@ -67,7 +69,7 @@ F14. Returns select delivered items, quantities and reasons. Enforce configured 
 | `/admin/inventory` | Stock balances, adjustments and low-stock view | Proposed |
 | `/admin/returns` | Approval, receipt and refund initiation | Proposed |
 | `/admin/reviews` | Moderate reviews | Proposed |
-| `/admin/storefront` | Hero, featured products, tiles and policy content | Visible menu |
+| `/admin/content` | Hero, featured products, tiles and policy content | Visible menu |
 | `/admin/media` | Upload and manage assets | Proposed |
 | `/admin/settings` | Active JSON revision and integration readiness | Proposed |
 | `/admin/audit` | Privileged actions and failures | Proposed |

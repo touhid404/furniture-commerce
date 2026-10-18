@@ -1,5 +1,7 @@
 # API specification
 
+> Current release scope: cash on delivery is active; SSLCommerz and card/webhook scenarios are deferred by the owner. Frontend and backend implementations live in `frontend/` and `backend/`. The 81-operation OpenAPI inventory and implementation/operator guides reflect current routes; card-provider sections below describe a future extension.
+
 ## Contract conventions
 
 Base path is `/api/v1`. JSON requests use UTF-8. Success responses are `{data, meta?}` and failures are `{error:{code,message,fields?},requestId}`. IDs are UUID strings; timestamps are UTC ISO 8601. Money is `{amountMinor:"18900",currency:"USD"}`. Never serialize a JavaScript BigInt directly. List responses use an opaque cursor, stable tie-breaker ID and a maximum limit of 48. All endpoint behavior below is the planned full platform contract; implemented foundation endpoints are recorded separately in the setup report.

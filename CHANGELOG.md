@@ -15,3 +15,12 @@
 - Deferred SSLCommerz; cash on delivery is the only active checkout method.
 
 Implementation remains in progress. The complete reference frontend and full commerce integration/browser acceptance are pending. Backend compilation and targeted unit tests do not establish production readiness.
+
+### Commerce implementation milestone
+
+- Implemented reference-inspired React storefront, customer account/checkout/orders and responsive admin screens.
+- Added Neon Object Storage uploads, stable product image URLs and media integrity constraints.
+- Added market price books, SKU controls, content publication, promotion/review management, inventory and order operations.
+- Added actual receipt/refund-time dashboard accounting and raw PostgreSQL serialization retry handling.
+- Added API, browser, upload, SMTP-worker and accessibility acceptance checks; final release results are recorded separately.
+- Added crawlable catalog/product metadata, sitemap/robots and a container deployment/operator guide.

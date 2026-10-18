@@ -4,7 +4,7 @@ React frontend, Express backend, PostgreSQL on Neon, and Prisma. Implementation 
 
 The supplied video controls the visual design. Store variables belong in validated JSON. Current payment scope is **cash on delivery only**; online payments must display “coming soon.” SSLCommerz integration is deferred.
 
-The backend milestone adds authentication, catalog, bag, checkout, fulfillment, returns and admin API modules. These modules compile and have targeted unit checks, but complete commerce integration and browser acceptance are still pending. The frontend currently remains the connectivity foundation; the full reference storefront and admin screens are not complete. Do not treat this branch as a production release. See [the implementation milestone](docs/13-implementation-progress.md).
+The storefront, customer workflows, admin screens and commerce backend are implemented and undergoing full acceptance. The [implementation status](docs/13-implementation-progress.md) and [operator guide](docs/14-operator-guide.md) distinguish verified behavior from external launch setup. The feature branch remains unmerged until acceptance is complete.
 
 ## Read first
 
@@ -46,13 +46,13 @@ tests/                       Unit and browser checks
 
 ## Development setup
 
-Use Node 24 and run `npm ci`. Keep `.env*` credentials and `.neon` ignored. The current local checkout uses an isolated Neon development branch; its `.env.development.local` takes priority over `.env.local`. Deployment-injected environment values take priority over files. `APP_ENV_FILE` can select another ignored environment file.
+Use Node 24 and run `npm ci`. Keep `.env*` credentials and `.neon` ignored. Verification uses an isolated Neon development branch; temporary branch settings are used only during verification. The finished app uses one ignored `.env.local`. Deployment-injected environment values take priority over files. `APP_ENV_FILE` can select another ignored environment file.
 
 For a new checkout, link the authorized Neon project, create/select a development branch, and pull its environment before applying migrations. Never migrate production as a development setup step. Use [the environment template](docs/config/backend.env.example) for the required variables. Run `npm run db:deploy` only after confirming that the selected database is the intended development branch. `DEMO_SEED=true npm run db:seed` adds fictional catalog and operational records only when the store profile is in demo mode.
 
 Run `npm run dev` and open [the development frontend](http://127.0.0.1:5173). Or run `npm run build` followed by `npm start` and open [the compiled application](http://127.0.0.1:3001). The API is under `/api/v1`. `npm run worker` starts the separate email outbox worker; SMTP credentials are needed for delivery.
 
-Run `npm test`, `npm run build`, `npm run check:docs`, `npm run check:config` and `npm run prisma:validate`. `npm run test:db` checks the deliberately configured database. Browser checks currently cover the connectivity foundation: use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` with installed Chrome, or install Playwright Chromium. Complete commerce acceptance checks remain pending.
+Run `npm test`, `npm run build`, `npm run check:docs`, `npm run check:config` and `npm run prisma:validate`. `npm run test:db` checks the deliberately configured database. For browser acceptance: use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` with installed Chrome, or install Playwright Chromium. Commerce browser, API concurrency, storage and SMTP acceptance are part of the release checks.
 
 The active [JSON store profile](config/stores/default.json) uses explicitly labeled demo settings and sample US/USD data. Configure real merchant rules and production credentials before launch.
 

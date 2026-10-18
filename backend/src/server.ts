@@ -1,8 +1,8 @@
-import { app } from "./app.js";
-import { prisma } from "./db/client.js";
+import { app } from './app.js';
+import { prisma } from './db/client.js';
 
 const port = Number(process.env.PORT ?? 3001);
-const server = app.listen(port, "127.0.0.1", () =>
+const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () =>
   console.log(`Commerce API listening on http://127.0.0.1:${port}`),
 );
 let shuttingDown = false;
@@ -13,5 +13,5 @@ function shutdown() {
   timer.unref();
   server.close(() => void prisma.$disconnect().then(() => process.exit(0)));
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
