@@ -10,6 +10,10 @@ node_modules/
 dist/
 build/
 coverage/
+test-results/
+playwright-report/
+.neon
+backend/src/generated/
 .DS_Store
 *.log
 __pycache__/
@@ -21,7 +25,9 @@ docs/reference/*.png
 docs/reference/*.jpg
 docs/internal/*.png
 docs/internal/*.jpg
-docs/internal/rendered/
+docs/internal/rendered*/
 docs/internal/tool-deps/
 docs/internal/*.pdf
-.neon
+
+# Runtime uploads stay outside Git
+data/uploads/

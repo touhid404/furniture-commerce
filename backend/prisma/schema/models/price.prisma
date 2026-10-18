@@ -1,0 +1,9 @@
+model Price {
+  id String @id @default(uuid()) @db.Uuid
+  variantId String @db.Uuid
+  variant ProductVariant @relation(fields:[variantId], references:[id], onDelete:Cascade)
+  marketId String
+  currency String
+  amountMinor BigInt
+  @@unique([variantId,marketId,currency])
+}

@@ -1,0 +1,11 @@
+model InventoryMovement {
+  id String @id @default(uuid()) @db.Uuid
+  inventoryId String @db.Uuid
+  inventory Inventory @relation(fields:[inventoryId], references:[id], onDelete:Restrict)
+  deltaOnHand Int @default(0)
+  deltaAllocated Int @default(0)
+  reason String
+  actorId String?
+  eventKey String @unique
+  createdAt DateTime @default(now())
+}

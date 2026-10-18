@@ -1,0 +1,13 @@
+model MediaAsset {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  url String @unique
+  objectKey String @default("")
+  thumbnailKey String @default("")
+  bucket String @default("assets")
+  size Int
+  mimeType String
+  products Product[]
+  actorId String? @db.Uuid
+  createdAt DateTime @default(now())
+}

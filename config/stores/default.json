@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "storeId": "furniture-demo",
+  "revision": "2026-10-18.3",
+  "mode": "demo",
+  "brand": {
+    "name": "KVIST",
+    "tagline": "Calm objects for considered living",
+    "logoPath": "",
+    "supportEmail": "support@example.com"
+  },
+  "timezone": "UTC",
+  "defaultLocale": "en-US",
+  "locales": [
+    "en-US"
+  ],
+  "defaultMarketId": "reference-us",
+  "currencies": [
+    {
+      "code": "USD",
+      "minorUnitDigits": 2
+    }
+  ],
+  "markets": [
+    {
+      "id": "reference-us",
+      "country": "US",
+      "currency": "USD",
+      "locales": [
+        "en-US"
+      ],
+      "enabled": true
+    }
+  ],
+  "theme": {
+    "canvas": "#F1F1E8",
+    "surface": "#FAFAF6",
+    "ink": "#1D2018",
+    "muted": "#626858",
+    "sage": "#DFE5D6",
+    "butter": "#F3EBC9",
+    "blue": "#DFE7F2",
+    "accent": "#4A58B6"
+  },
+  "navigation": [
+    {
+      "label": "Shop all",
+      "href": "/shop"
+    },
+    {
+      "label": "Seating",
+      "href": "/shop?category=seating"
+    },
+    {
+      "label": "Lighting",
+      "href": "/shop?category=lighting"
+    },
+    {
+      "label": "Textiles",
+      "href": "/shop?category=textiles"
+    },
+    {
+      "label": "Ceramics",
+      "href": "/shop?category=ceramics"
+    }
+  ],
+  "home": {
+    "eyebrow": "New season",
+    "headline": "Calm objects for slow living.",
+    "featuredSku": "BOLLE-SAGE",
+    "deliveryPromise": "Dispatched in 48h. 30-night trial."
+  },
+  "checkout": {
+    "guestEnabled": false,
+    "maxQuantityPerSku": 10,
+    "reservationMinutes": 15,
+    "quoteMinutes": 10,
+    "card": {
+      "enabled": false,
+      "provider": "unconfigured"
+    },
+    "cod": {
+      "enabled": true,
+      "countryAllowlist": [
+        "US"
+      ],
+      "maximumByCurrency": {
+        "USD": 100000
+      }
+    }
+  },
+  "shipping": {
+    "configured": true,
+    "rates": [
+      {
+        "id": "standard",
+        "marketId": "reference-us",
+        "label": "Standard delivery",
+        "currency": "USD",
+        "feeMinor": 0,
+        "freeOverMinor": 14400,
+        "estimatedDaysMin": 3,
+        "estimatedDaysMax": 7
+      }
+    ]
+  },
+  "tax": {
+    "configured": true,
+    "mode": "exclusive",
+    "shippingTaxable": false,
+    "rateBasisPoints": 0
+  },
+  "returns": {
+    "windowDays": 30,
+    "cancellationCutoff": "before-shipment"
+  },
+  "dashboard": {
+    "pollSeconds": 30,
+    "dailyGoalByCurrency": {
+      "USD": 400000
+    }
+  },
+  "features": {
+    "demoAdmin": true,
+    "simulateTraffic": false
+  },
+  "messages": {
+    "en-US": {
+      "setupTitle": "Commerce foundation",
+      "setupDescription": "The storefront and admin features are being prepared from the reference design.",
+      "databaseLabel": "PostgreSQL connection",
+      "checking": "Checking connection",
+      "checkAgain": "Check again",
+      "connected": "Connected",
+      "unavailable": "Unavailable",
+      "pending": "Not checked",
+      "bag": "Bag",
+      "readyNote": "Configuration and API are running. Commerce features are tracked in the project documentation.",
+      "errorNote": "The database check could not complete. Review the local environment and try again.",
+      "onlinePaymentComingSoon": "Online payment coming soon"
+    }
+  }
+}

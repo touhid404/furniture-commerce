@@ -1,0 +1,10 @@
+model AuthToken {
+  id String @id @default(uuid()) @db.Uuid
+  userId String? @db.Uuid
+  user User? @relation(fields:[userId], references:[id], onDelete:Cascade)
+  tokenHash String @unique
+  purpose String
+  targetId String?
+  expiresAt DateTime
+  usedAt DateTime?
+}

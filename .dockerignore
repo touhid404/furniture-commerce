@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+.neon
+node_modules
+dist
+test-results
+playwright-report
+*.mp4
+docs/reference
+docs/internal
+docs/deliverables
+data

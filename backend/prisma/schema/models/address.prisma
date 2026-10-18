@@ -1,0 +1,15 @@
+model Address {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  label String @default("Home")
+  recipient String
+  line1 String
+  line2 String @default("")
+  city String
+  region String @default("")
+  postalCode String @default("")
+  country String
+  phone String @default("")
+  isDefault Boolean @default(false)
+}

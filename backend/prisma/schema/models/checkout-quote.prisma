@@ -1,0 +1,10 @@
+model CheckoutQuote {
+  id String @id @default(uuid()) @db.Uuid
+  cartId String @db.Uuid
+  cart Cart @relation(fields:[cartId], references:[id], onDelete:Cascade)
+  cartVersion Int
+  configRevision String
+  payload Json
+  expiresAt DateTime
+  consumedAt DateTime?
+}

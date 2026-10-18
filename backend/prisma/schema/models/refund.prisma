@@ -1,0 +1,10 @@
+model Refund {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  order Order @relation(fields:[orderId], references:[id], onDelete:Restrict)
+  amountMinor BigInt
+  reason String
+  reference String
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+}

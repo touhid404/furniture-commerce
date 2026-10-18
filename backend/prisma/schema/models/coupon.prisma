@@ -1,0 +1,11 @@
+model Coupon {
+  id String @id @default(uuid()) @db.Uuid
+  code String @unique
+  percent Int
+  minimumMinor BigInt @default(0)
+  maxUses Int @default(100)
+  used Int @default(0)
+  active Boolean @default(true)
+  currency String
+  expiresAt DateTime?
+}

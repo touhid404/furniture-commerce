@@ -1,0 +1,9 @@
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String?
+  action String
+  target String
+  details Json
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
