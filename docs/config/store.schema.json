@@ -548,6 +548,10 @@
           "errorNote": {
             "type": "string",
             "maxLength": 5000
+          },
+          "onlinePaymentComingSoon": {
+            "type": "string",
+            "maxLength": 200
           }
         },
         "required": [
@@ -561,7 +565,8 @@
           "pending",
           "bag",
           "readyNote",
-          "errorNote"
+          "errorNote",
+          "onlinePaymentComingSoon"
         ],
         "additionalProperties": false
       },

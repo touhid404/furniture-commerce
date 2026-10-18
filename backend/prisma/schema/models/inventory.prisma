@@ -1,0 +1,10 @@
+model Inventory {
+  id String @id @default(uuid()) @db.Uuid
+  variantId String @unique @db.Uuid
+  variant ProductVariant @relation(fields:[variantId], references:[id], onDelete:Cascade)
+  onHand Int @default(0)
+  allocated Int @default(0)
+  threshold Int @default(5)
+  version Int @default(1)
+  movements InventoryMovement[]
+}

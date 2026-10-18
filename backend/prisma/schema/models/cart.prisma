@@ -1,0 +1,13 @@
+model Cart {
+  id String @id @default(uuid()) @db.Uuid
+  sessionId String? @unique @db.Uuid
+  session Session? @relation(fields:[sessionId], references:[id], onDelete:Cascade)
+  userId String? @unique @db.Uuid
+  user User? @relation(fields:[userId], references:[id], onDelete:Cascade)
+  marketId String
+  currency String
+  version Int @default(1)
+  couponCode String?
+  items CartItem[]
+  quotes CheckoutQuote[]
+}

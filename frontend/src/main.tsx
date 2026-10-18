@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
-import type { publicStoreConfig } from '../../api/src/config';
+import type { publicStoreConfig } from '../../backend/src/config';
 
 type PublicConfig = ReturnType<typeof publicStoreConfig>;
 type DatabaseState = { status: 'pending' | 'checking' | 'connected' | 'unavailable'; latencyMs?: number; checkedAt?: string };

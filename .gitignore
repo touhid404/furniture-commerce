@@ -13,7 +13,7 @@ coverage/
 test-results/
 playwright-report/
 .neon
-apps/api/src/generated/
+backend/src/generated/
 .DS_Store
 *.log
 __pycache__/
@@ -28,4 +28,6 @@ docs/internal/*.jpg
 docs/internal/rendered*/
 docs/internal/tool-deps/
 docs/internal/*.pdf
-.neon
+
+# Runtime uploads stay outside Git
+data/uploads/

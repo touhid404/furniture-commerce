@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "storeId": "furniture-demo",
-  "revision": "2026-10-18.1",
-  "mode": "development",
+  "revision": "2026-10-18.2",
+  "mode": "demo",
   "brand": {
     "name": "KVIST",
     "tagline": "Calm objects for considered living",
@@ -66,9 +66,9 @@
   ],
   "home": {
     "eyebrow": "New season",
-    "headline": "Calm objects for considered living",
-    "featuredSku": "",
-    "deliveryPromise": "Delivery details will be confirmed before launch"
+    "headline": "Calm objects for slow living.",
+    "featuredSku": "BOLLE-SAGE",
+    "deliveryPromise": "Dispatched in 48h. 30-night trial."
   },
   "checkout": {
     "guestEnabled": true,
@@ -76,19 +76,21 @@
     "reservationMinutes": 15,
     "quoteMinutes": 10,
     "card": {
-      "enabled": true,
+      "enabled": false,
       "provider": "unconfigured"
     },
     "cod": {
       "enabled": true,
-      "countryAllowlist": [],
+      "countryAllowlist": [
+        "US"
+      ],
       "maximumByCurrency": {
         "USD": 100000
       }
     }
   },
   "shipping": {
-    "configured": false,
+    "configured": true,
     "rates": [
       {
         "id": "standard",
@@ -103,7 +105,7 @@
     ]
   },
   "tax": {
-    "configured": false,
+    "configured": true,
     "mode": "exclusive",
     "shippingTaxable": false,
     "rateBasisPoints": 0
@@ -119,7 +121,7 @@
     }
   },
   "features": {
-    "demoAdmin": false,
+    "demoAdmin": true,
     "simulateTraffic": false
   },
   "messages": {
@@ -134,7 +136,8 @@
       "pending": "Not checked",
       "bag": "Bag",
       "readyNote": "Configuration and API are running. Commerce features are tracked in the project documentation.",
-      "errorNote": "The database check could not complete. Review the local environment and try again."
+      "errorNote": "The database check could not complete. Review the local environment and try again.",
+      "onlinePaymentComingSoon": "Online payment coming soon"
     }
   }
 }

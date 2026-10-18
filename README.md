@@ -1,8 +1,10 @@
-# Furniture commerce project documentation
+# Furniture commerce platform
 
-Professional requirements and implementation specification for a React storefront and admin application, an Express API, and PostgreSQL on Neon accessed through Prisma. Version 0.1, 18 October 2026.
+React frontend, Express backend, PostgreSQL on Neon, and Prisma. Implementation is in progress; the editable specification is a version 0.1 planning snapshot from 18 October 2026.
 
-The reference video controls the visual design of the screens it shows. The specification covers a complete production launch, online card payments and cash on delivery, and reusable JSON store profiles. The current application is a verified React/Express/Prisma connectivity foundation connected to the requested Neon Postgres branch. The commerce storefront and admin features are specified but not yet implemented.
+The supplied video controls the visual design. Store variables belong in validated JSON. Current payment scope is **cash on delivery only**; online payments must display “coming soon.” SSLCommerz integration is deferred.
+
+The backend milestone adds authentication, catalog, bag, checkout, fulfillment, returns and admin API modules. These modules compile and have targeted unit checks, but complete commerce integration and browser acceptance are still pending. The frontend currently remains the connectivity foundation; the full reference storefront and admin screens are not complete. Do not treat this branch as a production release. See [the implementation milestone](docs/13-implementation-progress.md).
 
 ## Read first
 
@@ -28,18 +30,34 @@ The reference video controls the visual design of the screens it shows. The spec
 - [Reference capture index](docs/reference/README.md) — four cropped screens and 47 timestamped frames.
 - [Documentation validation](docs/internal/validation-report.md).
 
-## Run the foundation
+## Project structure
 
-Use Node 24. Run `npm ci`, then `npx neon@latest init -y --org-id org-summer-unit-14920623 --project-id quiet-boat-96833475 --branch production --services postgres` only when this checkout is not already linked. Finish Neon sign-in if requested, and run `npx neon@latest deploy` to pull local environment values. Keep `.env.local` and `.neon` ignored.
+```text
+frontend/                     React application and Vite configuration
+backend/src/modules/          Express auth, catalog, commerce and admin routes
+backend/src/services/         Transactions, stock operations and calculations
+backend/prisma/schema/        Generator, datasource and shared enums
+backend/prisma/schema/models/ One Prisma schema file per table
+backend/prisma/migrations/    Reviewed SQL migration history
+config/stores/                Validated store profiles
+scripts/                      Setup, administration and validation
+tests/                       Unit and browser checks
+```
 
-Run `npm run build` and `npm start`, then open [the local foundation](http://127.0.0.1:3001). For frontend/API hot reload, use `npm run dev` and open [the Vite development app](http://127.0.0.1:5173). The page verifies React to Express to Prisma to Neon with a read-only query. It is a development setup screen, not the completed commerce design.
+## Development setup
 
-Run `npm run check:docs`, `npm run check:config`, `npm test`, `npm run prisma:validate` and `npm run test:db`. For browser verification install a Playwright browser with `npx playwright install chromium`, or use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` if Chrome is installed. The production database check does not create or modify tables.
+Use Node 24 and run `npm ci`. Keep `.env*` credentials and `.neon` ignored. The current local checkout uses an isolated Neon development branch; its `.env.development.local` takes priority over `.env.local`. Deployment-injected environment values take priority over files. `APP_ENV_FILE` can select another ignored environment file.
 
-The active profile is [config/stores/default.json](config/stores/default.json). It is deliberately marked development with unconfigured commerce integrations; use it as a template, not a launch-ready country choice.
+For a new checkout, link the authorized Neon project, create/select a development branch, and pull its environment before applying migrations. Never migrate production as a development setup step. Use [the environment template](docs/config/backend.env.example) for the required variables. Run `npm run db:deploy` only after confirming that the selected database is the intended development branch. `DEMO_SEED=true npm run db:seed` adds fictional catalog and operational records only when the store profile is in demo mode.
+
+Run `npm run dev` and open [the development frontend](http://127.0.0.1:5173). Or run `npm run build` followed by `npm start` and open [the compiled application](http://127.0.0.1:3001). The API is under `/api/v1`. `npm run worker` starts the separate email outbox worker; SMTP credentials are needed for delivery.
+
+Run `npm test`, `npm run build`, `npm run check:docs`, `npm run check:config` and `npm run prisma:validate`. `npm run test:db` checks the deliberately configured database. Browser checks currently cover the connectivity foundation: use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` with installed Chrome, or install Playwright Chromium. Complete commerce acceptance checks remain pending.
+
+The active [JSON store profile](config/stores/default.json) uses explicitly labeled demo settings and sample US/USD data. Configure real merchant rules and production credentials before launch.
 
 ## Confirmed project choices
 
-React frontend, Express backend, PostgreSQL with Prisma, Neon database hosting, customer and main-admin experiences, card payments plus cash on delivery, full production scope, and store variables kept in JSON. Branding, country, language and currency must be configurable for different store owners.
+React frontend, Express backend, PostgreSQL with Prisma, Neon database hosting, customer and main-admin experiences, cash on delivery with online payment deferred, full production scope, and store variables kept in JSON. Branding, country, language and currency must be configurable for different store owners.
 
 One merchant per deployed instance is the documented baseline. JSON profiles make the project reusable for another owner; running many merchants in one database is a separate architecture decision. No Neon credential is needed to review these documents. PostgreSQL connection strings stay in the backend environment; a Neon management API key is not needed for normal database queries. The repository is private at [touhid404/furniture-commerce](https://github.com/touhid404/furniture-commerce). Analysis images and the video stay local.

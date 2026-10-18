@@ -1,0 +1,9 @@
+model Shipment {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @unique @db.Uuid
+  order Order @relation(fields:[orderId], references:[id], onDelete:Restrict)
+  carrier String
+  tracking String
+  shippedAt DateTime @default(now())
+  deliveredAt DateTime?
+}

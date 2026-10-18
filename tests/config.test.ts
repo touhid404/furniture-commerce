@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateStoreConfig, storeConfig, publicStoreConfig } from '../apps/api/src/config.js';
+import { validateStoreConfig, storeConfig, publicStoreConfig } from '../backend/src/config.js';
 
 test('owner branding and currency can change without editing application code', () => {
   const alternate = structuredClone(storeConfig);
@@ -29,5 +29,9 @@ test('schema rejects unknown secret-shaped keys', () => {
 });
 test('public profile excludes private payment and tax configuration', () => {
   const data = publicStoreConfig();
-  assert.equal('checkout' in data, false); assert.equal('tax' in data, false); assert.equal(data.capabilities.commerceReady, false);
+  assert.deepEqual(Object.keys(data.checkout).sort(), ['codEnabled', 'guestEnabled', 'onlinePaymentLabel']);
+  assert.equal('tax' in data, false);
+  assert.equal('cod' in data.checkout, false);
+  assert.equal('card' in data.checkout, false);
+  assert.equal(data.capabilities.commerceReady, true);
 });

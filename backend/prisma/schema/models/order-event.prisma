@@ -1,0 +1,9 @@
+model OrderEvent {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  order Order @relation(fields:[orderId], references:[id], onDelete:Restrict)
+  type String
+  message String
+  actorId String?
+  createdAt DateTime @default(now())
+}

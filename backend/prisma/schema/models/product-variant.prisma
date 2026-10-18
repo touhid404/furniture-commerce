@@ -1,0 +1,12 @@
+model ProductVariant {
+  id String @id @default(uuid()) @db.Uuid
+  productId String @db.Uuid
+  product Product @relation(fields:[productId], references:[id], onDelete:Restrict)
+  sku String @unique
+  label String @default("Standard")
+  active Boolean @default(true)
+  prices Price[]
+  inventory Inventory?
+  cartItems CartItem[]
+  orderItems OrderItem[]
+}

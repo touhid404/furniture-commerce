@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { prisma, checkDatabase } from '../apps/api/src/db/client.js';
+import { prisma, checkDatabase } from '../backend/src/db/client.js';
 
 try {
   const probe = await checkDatabase();

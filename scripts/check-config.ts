@@ -1,4 +1,4 @@
-import { storeConfig, publicStoreConfig } from '../apps/api/src/config.js';
+import { storeConfig, publicStoreConfig } from '../backend/src/config.js';
 
 console.log(`PASS store JSON schema and cross-field validation (${storeConfig.storeId}, ${storeConfig.revision})`);
 const publicJson = JSON.stringify(publicStoreConfig());

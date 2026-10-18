@@ -2,7 +2,7 @@
 
 ## System structure
 
-Use TypeScript with two React applications and one Express service. Storefront and admin share design primitives and safe API types. Express owns validation, authorization, price calculation, stock transitions, payments and persistence. A supervised worker uses the same domain services for scheduled and retried work.
+Use TypeScript with a React frontend workspace and an Express backend workspace. Storefront and admin share design primitives and safe API types. Express owns validation, authorization, price calculation, stock transitions, payments and persistence. A supervised worker uses the same domain services for scheduled and retried work.
 
 ```mermaid
 flowchart LR
@@ -26,26 +26,30 @@ flowchart LR
 
 Prefer a single gateway origin with `/admin` and `/api/v1` paths. Separate origins require explicitly tested CORS, cookie and CSRF configuration. Browsers never connect directly to Neon. SPA fallbacks apply only to frontend paths; unknown API routes return JSON 404 responses.
 
-## Proposed project structure
+## Required project structure
 
 ```text
-apps/
-  storefront/src/{app,pages,features,components,lib,styles}
-  admin/src/{app,pages,features,components,lib,styles}
-  api/
-    src/{config,middleware,modules,integrations,jobs,db,generated}
-    prisma/{schema.prisma,migrations,seed.ts}
-    prisma.config.ts
-packages/
-  ui/
-  contracts/
-  config/
+frontend/
+  src/{app,pages,features,components,lib,styles}
+  vite.config.ts
+backend/
+  src/{config,middleware,modules,services,integrations,jobs,db,generated}
+  prisma/
+    schema/
+      schema.prisma
+      enums.prisma
+      models/                  # one model/table per file
+    migrations/
+    seed.ts
 config/stores/
 docs/
 tests/{integration,e2e,visual}
+prisma.config.ts
 ```
 
-This is the target full-platform structure. The Neon task has now created a small `apps/storefront` and `apps/api` connectivity scaffold, root Vite/TypeScript configuration and a root Prisma CLI configuration. Separate admin build and domain modules remain planned. Configure the future admin router basename as `/admin`.
+The root folders are named `frontend` and `backend` as requested. Storefront and admin routes share the frontend workspace; backend authorization protects `/api/v1/admin`. The generator and datasource declarations live in `backend/prisma/schema/schema.prisma`; each table has its own file under `models/`. Shared enums have a separate file. The Prisma CLI uses the complete schema directory through the root `prisma.config.ts`.
+
+See [implementation progress](13-implementation-progress.md) for the verified milestone and remaining screens. The diagram above includes future integrations: online payment is currently deferred, and COD is the only active payment method.
 
 ## Frontend choices
 
@@ -73,4 +77,4 @@ Prisma generates its backend client into an explicit directory; see the [generat
 
 ## Reuse model
 
-Each deployed merchant has its own JSON profile and database. Two React builds keep admin navigation and dependencies separate, but API authorization remains the security boundary. A single modular Express application keeps stock and order transactions local. A shared multitenant SaaS, multiple warehouses or separate domain services requires a new architecture decision and isolation tests.
+Each deployed merchant has its own JSON profile and database. Storefront and admin routes share React primitives; API authorization remains the security boundary. A single modular Express application keeps stock and order transactions local. A shared multitenant SaaS, multiple warehouses or separate domain services requires a new architecture decision and isolation tests.

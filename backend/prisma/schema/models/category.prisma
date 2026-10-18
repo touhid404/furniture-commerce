@@ -1,0 +1,9 @@
+model Category {
+  id String @id @default(uuid()) @db.Uuid
+  slug String @unique
+  name String
+  description String @default("")
+  sortOrder Int @default(0)
+  active Boolean @default(true)
+  products Product[]
+}

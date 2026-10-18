@@ -1,0 +1,37 @@
+model Order {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  sessionId String @db.Uuid
+  session Session @relation(fields:[sessionId], references:[id], onDelete:Restrict)
+  userId String? @db.Uuid
+  user User? @relation(fields:[userId], references:[id], onDelete:SetNull)
+  email String
+  status OrderStatus @default(CONFIRMED)
+  fulfillment FulfillmentStatus @default(UNFULFILLED)
+  paymentStatus String @default("UNPAID")
+  marketId String
+  currency String
+  locale String
+  configRevision String
+  address Json
+  subtotalMinor BigInt
+  discountMinor BigInt @default(0)
+  shippingMinor BigInt
+  taxMinor BigInt
+  totalMinor BigInt
+  refundedMinor BigInt @default(0)
+  idempotencyKey String
+  fingerprint String
+  couponCode String?
+  note String @default("")
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  items OrderItem[]
+  events OrderEvent[]
+  shipment Shipment?
+  returns ReturnRequest[]
+  refunds Refund[]
+  @@unique([sessionId,idempotencyKey])
+  @@index([userId,createdAt])
+  @@index([status,createdAt])
+}

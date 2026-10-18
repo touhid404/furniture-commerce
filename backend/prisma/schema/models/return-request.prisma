@@ -1,0 +1,10 @@
+model ReturnRequest {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  order Order @relation(fields:[orderId], references:[id], onDelete:Restrict)
+  status String @default("REQUESTED")
+  reason String
+  items Json
+  resolution String @default("")
+  createdAt DateTime @default(now())
+}

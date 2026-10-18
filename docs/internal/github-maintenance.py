@@ -25,8 +25,17 @@ elif mode=='pr':
  body=Path(sys.argv[2]).read_text()
  pr=call('POST','/pulls',{'title':'Document the commerce platform and verify its Neon foundation','body':body,'head':'feat/documentation-and-neon-foundation','base':'main','draft':True})
  print(json.dumps({'number':pr['number'],'url':pr['html_url'],'state':pr['state'],'draft':pr['draft']}))
+elif mode=='milestone-pr':
+ body=Path(sys.argv[2]).read_text()
+ head='feat/commerce-platform'
+ existing=call('GET','/pulls?state=open&head=touhid404:'+head)
+ if existing:pr=existing[0]
+ else:pr=call('POST','/pulls',{'title':'Implement the commerce platform in frontend and backend workspaces','body':body,'head':head,'base':'main','draft':True})
+ print(json.dumps({'number':pr['number'],'url':pr['html_url'],'state':pr['state'],'draft':pr['draft']}))
 elif mode=='runs':
- runs=call('GET','/actions/runs?branch=feat%2Fdocumentation-and-neon-foundation&per_page=3')
+ from urllib.parse import quote
+ branch=sys.argv[2] if len(sys.argv)>2 else 'feat/documentation-and-neon-foundation'
+ runs=call('GET','/actions/runs?branch='+quote(branch,safe='')+'&per_page=3')
  print(json.dumps([{'id':r['id'],'url':r['html_url'],'status':r['status'],'conclusion':r['conclusion'],'sha':r['head_sha']} for r in runs['workflow_runs']]))
 elif mode=='jobs':
  data=call('GET',f'/actions/runs/{sys.argv[2]}/jobs')

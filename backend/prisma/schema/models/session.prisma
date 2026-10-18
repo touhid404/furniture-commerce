@@ -1,0 +1,13 @@
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique
+  csrfToken String
+  userId String? @db.Uuid
+  user User? @relation(fields:[userId], references:[id], onDelete:Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  cart Cart?
+  orders Order[]
+  guestOrderId String? @db.Uuid
+  @@index([expiresAt])
+}
