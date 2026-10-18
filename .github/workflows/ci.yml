@@ -1,0 +1,25 @@
+name: Project checks
+on:
+  pull_request:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'docs/**', 'chore/**']
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check:docs
+      - run: npm run check:config
+      - run: npm test
+      - run: npm run build
+      - run: npm run prisma:validate

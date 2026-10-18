@@ -10,6 +10,10 @@ node_modules/
 dist/
 build/
 coverage/
+test-results/
+playwright-report/
+.neon
+apps/api/src/generated/
 .DS_Store
 *.log
 __pycache__/
