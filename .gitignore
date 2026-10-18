@@ -1,0 +1,27 @@
+# Credentials and local environments
+.env
+.env.*
+!.env.example
+!*env.example
+*.pem
+*.key
+# Dependencies and outputs
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+*.log
+__pycache__/
+.venv/
+# User-supplied video and analysis images stay local
+*.mp4
+docs/reference/frames/
+docs/reference/*.png
+docs/reference/*.jpg
+docs/internal/*.png
+docs/internal/*.jpg
+docs/internal/rendered/
+docs/internal/tool-deps/
+docs/internal/*.pdf
+.neon
