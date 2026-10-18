@@ -67,7 +67,7 @@ Cache public content by configuration/content revision and invalidate on publica
 
 ## Dependency baseline
 
-Provisionally use Node 24 LTS, Express 5, a stable React version and Prisma 7. Verify support at scaffolding and pin exact installed versions and a lockfile. Keep Prisma CLI, client and adapter versions aligned; avoid an unpinned latest tag. The current artifacts are documentation, not installed application dependencies.
+The verified foundation uses Node 24, React 19.3.1, Express 5.3.0 and Prisma 7.10.1. Exact versions are recorded in package.json and package-lock.json. Keep Prisma CLI, client and adapter versions aligned; avoid an unpinned latest tag. Verify compatibility again when adding the remaining application modules.
 
 Prisma generates its backend client into an explicit directory; see the [generator reference](https://www.prisma.io/docs/orm/v7/prisma-schema/overview/generators). Use one client per API or worker process and graceful shutdown. Do not create/disconnect a client for each request. The database setup procedure appears in the operations document.
 

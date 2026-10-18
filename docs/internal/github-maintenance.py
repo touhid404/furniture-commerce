@@ -16,6 +16,8 @@ def call(method,path='',body=None):
   try:details=json.load(error)
   except Exception:details={}
   raise SystemExit(f'GitHub {method} {path}: HTTP {error.code}: {details.get("message","request failed")}')
+ except (TimeoutError, urllib.error.URLError):
+  raise SystemExit(f'GitHub {method} {path}: network timeout or connection failure; inspect remote state before retrying mutations')
 mode=sys.argv[1]
 if mode=='inspect':
  repo=call('GET');print(json.dumps({k:repo[k] for k in ['full_name','private','default_branch','html_url']}))
