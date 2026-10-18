@@ -25,7 +25,7 @@ docs/reference/*.png
 docs/reference/*.jpg
 docs/internal/*.png
 docs/internal/*.jpg
-docs/internal/rendered/
+docs/internal/rendered*/
 docs/internal/tool-deps/
 docs/internal/*.pdf
 .neon
