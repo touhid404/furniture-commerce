@@ -72,4 +72,4 @@ Visual tests use locally retained reference captures; do not push analysis frame
 - Test restore and application rollback; name the operating owner.
 - Tag the release, publish release notes and retain the migration/config revision.
 
-This checklist is the future release standard. It is not a claim that a production store is ready at this documentation stage.
+This commercial launch checklist remains an operator responsibility. The release verification report records the implemented code and acceptance evidence without claiming a public merchant deployment.

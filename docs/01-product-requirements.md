@@ -4,7 +4,7 @@
 
 ## Purpose and outcome
 
-Build a furniture and homewares commerce platform that reproduces the supplied video's storefront and admin visual language. Customers browse products, manage a bag, pay by card or cash on delivery, and track purchases. A main admin manages the catalog, stock, orders, content, and store operations. React renders both experiences, Express owns business rules, and Prisma accesses PostgreSQL hosted by Neon.
+Build a furniture and homewares commerce platform that reproduces the supplied video's storefront and admin visual language. Customers browse products, manage a bag, place cash-on-delivery orders (online payment is deferred), and track purchases. A main admin manages the catalog, stock, orders, content, and store operations. React renders both experiences, Express owns business rules, and Prisma accesses PostgreSQL hosted by Neon.
 
 This specification is a development baseline with explicit open business decisions. A reference frame confirms appearance; it does not establish backend behavior. Proposed behavior below completes the production workflow and must be tested before launch.
 
@@ -17,14 +17,14 @@ This specification is a development baseline with explicit open business decisio
 | R03 | Use React, Express, PostgreSQL and Prisma | User |
 | R04 | Connect to a user-supplied Neon database during implementation | User |
 | R05 | Configure branding, countries, currencies, languages and store variables in JSON | User follow-up |
-| R06 | Support online card payments and cash on delivery | User follow-up |
+| R06 | Support cash on delivery; show online payment coming soon | User follow-up |
 | R07 | Cover payments, delivery, returns, security, testing and deployment | User follow-up |
 | R08 | Specify unseen screens in the same visual style | User acceptance of proposed approach |
 | R09 | Maintain a private GitHub repository professionally and exclude analysis images | User follow-up |
 
 ## Actors and boundaries
 
-A visitor can browse, select a market, maintain an anonymous bag, register, and use guest checkout where enabled. A customer additionally manages their profile, addresses and orders. The main admin can operate the store and create controlled content. A payment provider and a delivery operator exchange external status updates through verified integration paths. Automated jobs expire reservations and deliver queued notifications.
+A visitor can browse, select a market, maintain an anonymous bag, register, and use guest checkout where enabled. A customer additionally manages their profile, addresses and orders. The main admin can operate the store and create controlled content. A payment provider and a delivery operator exchange external status updates through verified integration paths. Automated jobs deliver queued notifications and remove unused storage objects.
 
 The baseline is a single merchant, a single inventory pool, and one shipping address per order. Multiple configured markets and currencies are supported through explicit price books. A different owner deploys a different JSON profile and database. A marketplace, merchant onboarding service, multiwarehouse routing, subscriptions, loyalty points, and native mobile apps are future scope. These are not implied by the demo.
 

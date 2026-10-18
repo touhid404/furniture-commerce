@@ -36,7 +36,7 @@ Create a real administrator using the controlled `npm run admin:create` command 
 - Images: the server checks image signatures and writes immutable object keys into Neon `assets`. PostgreSQL stores the key and a stable `/media/:id` URL. Reads generate a fresh one-hour signed URL; expired signed URLs are never saved as product references. In-use images cannot be deleted. Deletion of both the source and derivative is queued to the worker after the reference is removed.
 - Orders: process, dispatch with carrier/tracking, confirm delivery, then record the actual cash collection. Order creation does not mark cash as paid. Export CSV from the orders screen.
 - Returns: review a request, approve/reject with instructions, receive and inspect goods, and choose whether to restock. Record any completed manual payout separately on the order page. Duplicate receipts and excess refunds are rejected.
-- Storefront: save content drafts, publish when ready, or restore an earlier revision by publishing it. Rendering is plain text. Store variables remain reviewed JSON changes in GitHub.
+- Storefront: save content drafts, publish when ready, or restore an earlier revision by publishing it. Rendering is plain text. Store variables can be edited through the validated Settings form; reviewed bootstrap-file changes use the operator command.
 - Reviews: publish or hide reviews from verified delivered purchases. Notifications show pending/sent/failed outbox jobs; failed jobs can be retried. The audit screen records privileged changes.
 
 ## Revenue and inventory definitions
@@ -63,7 +63,7 @@ Production data deletion and retention need a reviewed merchant policy. Sessions
 
 ## Current environment and reset record
 
-The active app uses Neon project `quiet-boat-96833475`, branch `production`, and its private `assets` bucket. The owner explicitly approved a one-time application-data reset on 18 October 2026; schema and migration history were preserved. That approval is not permission for later resets. The old development branch is left for the owner to delete. Acceptance fixtures use a temporary `test-*` branch and refuse the production endpoint even if its environment label is wrong.
+The active app uses Neon project `quiet-boat-96833475`, branch `production`, and its private `assets` bucket. The owner explicitly approved a one-time application-data reset on 18 October 2026; schema and migration history were preserved. That approval is not permission for later resets. The owner handled development-branch cleanup; the latest inspection lists production and the expiring test branch. Acceptance fixtures use a temporary `test-*` branch and refuse the production endpoint even if its environment label is wrong.
 
 The reset creates `admin@ex.com` with username `admin`, password `1234`, Argon2 hashing and a required-password-change flag. This account works only in local demo runtime. `npm start` and real production mode reject its login and admin operations until an operator supplies a strong replacement through `npm run admin:create`. Public registration cannot assign ADMIN. Demo sign-in is separately controlled and is disabled in the active local environment.
 

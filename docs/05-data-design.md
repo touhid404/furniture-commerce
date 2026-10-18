@@ -10,7 +10,7 @@ Maintain per-currency SKU price books. Product prices may change, but order item
 
 ## Entity dictionary
 
-The table describes the required logical model. A complete executable `schema.prisma` and reviewed SQL migrations are implementation deliverables, not generated artifacts in this documentation stage.
+The table describes the target logical model, including deferred card/translation/multi-image records. The current COD implementation has 26 separate executable model files under `backend/prisma/schema/models` and six reviewed migrations. See the release report for verified implementation; the target dictionary is not a claim that every proposed table is present.
 
 | Model | Principal fields | Constraints and relationships |
 | --- | --- | --- |
@@ -103,3 +103,7 @@ Grand total equals merchandise subtotal minus discount plus shipping plus exclus
 Index published catalog by status/category, price by market/currency/variant, orders by owner/date and status/date, payments by provider reference, jobs by state/availableAt, reservations by state/expiry, and audit by target/date. Use indexed normalized email for access checks. Search begins with PostgreSQL full-text or indexed case-insensitive queries; measure before adding a search service.
 
 Migrations are versioned with code and tested on a disposable database branch. Use expand, backfill, deploy and contract steps for destructive shape changes. Never run reset commands on a shared or production database. Configure retention separately for sessions, webhook payloads, logs, exports and order records. Account deletion anonymizes eligible personal data while retaining required commercial records according to the chosen jurisdiction's policy; no retention period is asserted as law here.
+
+## Persistent store settings
+
+`StoreSettings` stores one validated merchant JSON profile per store ID, a server-generated revision and update timestamp. Dashboard/API edits compare the expected revision, serialize the update and write an audit event. Startup reloads the profile; deployment identity/security switches come from the reviewed server profile. This table contains no credentials and is separate from ordinary product seeding and destructive application fixtures.

@@ -61,6 +61,11 @@ elif mode=='runs':
 elif mode=='jobs':
  data=call('GET',f'/actions/runs/{sys.argv[2]}/jobs')
  print(json.dumps([{'name':j['name'],'conclusion':j['conclusion'],'steps':[{'name':s['name'],'conclusion':s['conclusion']} for s in j['steps']]} for j in data['jobs']]))
+elif mode=='failed-checks':
+ pr=call('GET','/pulls/'+sys.argv[2])
+ checks=call('GET','/commits/'+pr['head']['sha']+'/check-runs')
+ for check in checks['check_runs']:
+  if check['conclusion']=='failure':print(json.dumps(call('GET','/check-runs/'+str(check['id'])+'/annotations?per_page=20')))
 elif mode=='ready':
  pr=call('GET','/pulls/'+sys.argv[2])
  payload={'query':'mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}','variables':{'id':pr['node_id']}}

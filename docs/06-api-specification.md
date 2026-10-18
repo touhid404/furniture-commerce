@@ -4,13 +4,13 @@
 
 ## Contract conventions
 
-Base path is `/api/v1`. JSON requests use UTF-8. Success responses are `{data, meta?}` and failures are `{error:{code,message,fields?},requestId}`. IDs are UUID strings; timestamps are UTC ISO 8601. Money is `{amountMinor:"18900",currency:"USD"}`. Never serialize a JavaScript BigInt directly. List responses use an opaque cursor, stable tie-breaker ID and a maximum limit of 48. All endpoint behavior below is the planned full platform contract; implemented foundation endpoints are recorded separately in the setup report.
+Base path is `/api/v1`. JSON requests use UTF-8. Success responses are `{data, meta?}` and failures are `{error:{code,message,fields?},requestId}`. IDs are UUID strings; timestamps are UTC ISO 8601. Money is `{amountMinor:"18900",currency:"USD"}`. Never serialize a JavaScript BigInt directly. Implemented list responses use page/limit and stable tie-breaker IDs: the public catalog allows up to 48 items, admin lists up to 100. The matrix below retains the full planning contract, including deferred extensions. The generated OpenAPI artifact is the authoritative inventory of 87 implemented operations; backend DTOs define strict request validation.
 
-Use an opaque `__Host-shop_session` cookie with Secure, HttpOnly, Path=/ and SameSite=Lax in HTTPS environments. Authenticated and anonymous sessions are distinguished server-side. A synchronizer CSRF token is required for cookie-authenticated mutations, including login, except verified provider webhooks. First fetch `/auth/csrf` to establish an anonymous session and token. Rotate session identifiers on login and privilege changes. Reject unrecognized input fields on privileged mutations to prevent mass assignment.
+Use an opaque `__Host-kvist_session` cookie with Secure, HttpOnly, Path=/ and SameSite=Lax in HTTPS environments. Authenticated and anonymous sessions are distinguished server-side. A synchronizer CSRF token is required for cookie-authenticated mutations, including login, except verified provider webhooks. First fetch `/auth/csrf` to establish an anonymous session and token. Rotate session identifiers on login and privilege changes. Reject unrecognized input fields on privileged mutations to prevent mass assignment.
 
 GET is read-only; POST creates a resource or requests a named domain action; PATCH updates permitted fields; DELETE removes a bag line or revokes a draft association. Use 200/201/202/204 for successful outcomes; 400 malformed input, 401 missing identity, 403 insufficient role, 404 absent or inaccessible resource, 409 version/stock/idempotency conflicts, 422 valid syntax with invalid business input, 429 rate limit and 503 dependency unavailable. Include Retry-After where meaningful. No stack traces or credentials reach clients.
 
-## Endpoint inventory
+## Planning endpoint matrix
 
 The Access column means public, anonymous/account session, customer ownership, order-scoped guest access, admin role, or signed provider event. Customer ownership and guest access are checked per resource, not only per route.
 
@@ -92,7 +92,7 @@ All account/admin mutations require CSRF even where the table abbreviates it. Li
 
 ## Critical request shapes
 
-Add a bag item with `{variantId, quantity}`. Return the complete bag and any adjustment warning. Create a quote with `{marketId,currency,shippingAddress,shippingMethodId,couponCode?}` bound to the current bag. Submit an order with `{quoteId,paymentMethod:"CARD"|"COD"}` and `Idempotency-Key`. Return `{orderId,orderNumber,paymentStatus,nextAction?}`; card nextAction is a hosted redirect with an expiry, COD has no card redirect.
+Current guest bags are local. At authenticated checkout, sync `{marketId,items:[{variantId,quantity}],couponCode?}` to `/cart/sync`. Create a quote with `{contactEmail,shippingAddress,shippingMethodId}`; the response includes current item prices and totals. Submit `{quoteId,paymentMethod:"COD"}` with `Idempotency-Key`. The response contains the saved order. Card sessions and redirects are deferred.
 
 Admin dashboard accepts range=7d|30d|90d and currency; return period, timezone, computedAt, metric values, comparison values, series, category allocations and recent orders. No frontend constants stand in for production metrics. Product edits require an expected version; return 409 if stale.
 
@@ -104,4 +104,4 @@ Stable error codes include VALIDATION_FAILED, AUTH_REQUIRED, FORBIDDEN, PRODUCT_
 
 ## Machine-readable scope
 
-`docs/contracts/openapi.json` describes the critical config, catalog, CSRF, bag, quote, order-submission and readiness interfaces. It is a planned contract, not evidence that all endpoints exist. Add each remaining module's exact request/response schemas before implementing it. An endpoint is complete only when handlers, authorization and integration tests conform to the contract.
+`docs/contracts/openapi.json` inventories the 87 implemented operations, with exact schemas for the critical shopping flow and store configuration. Backend request DTOs and authorization middleware define strict validation and access checks. The broader planning matrix above includes deferred routes; do not assume those exist unless they appear in the generated inventory and have passing implementation acceptance.

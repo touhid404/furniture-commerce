@@ -36,7 +36,7 @@ F05. Customers manage profile and addresses and access only their own orders. De
 
 ## Bag and checkout
 
-F06. Anonymous bags use opaque cookies with server-stored contents. On login, merge account and anonymous bags once in a transaction, combine duplicate SKUs within stock and quantity limits, retire the anonymous bag, and show adjustment notices. Adding to a bag checks availability but does not reserve stock.
+F06. Anonymous bags use immediate browser state and versioned local storage. Duplicate variants combine quantities; refresh and cross-tab changes preserve selections. Adding/removing/changing quantity requires no cart API and does not reserve stock. Checkout redirects guests to login and returns them with the bag intact. An authenticated sync submits identifiers and quantities; backend prices/stock remain authoritative. Existing server-cart endpoints remain available for checkout and compatibility.
 
 F07. The server calculates prices, coupon eligibility, tax and delivery. Clients submit SKU IDs and quantities, never authoritative totals. Market, currency, coupon, shipping method or address changes require a new quote. Switching currency selects an explicit price book and asks the customer to review price changes.
 
@@ -80,7 +80,7 @@ F16. Publication requires category, active SKU, enabled-market price and image w
 
 F17. Fulfillment captures quantities, carrier and tracking. Launch supports one shipment per order; shipment-item records allow later partial shipment support. Refunds require reason, idempotency key and an amount no greater than the captured unrefunded balance. COD refunds use a documented manual payout workflow and do not pretend to call a card provider.
 
-F18. Storefront content has draft, preview, publish and rollback revisions. Product/order data remains relational; store-wide variables remain JSON. The settings page shows configuration readiness; changes to the versioned JSON are reviewed and deployed through GitHub at launch. CSV exports escape formula-leading cells and expire download links. Errors preserve form input.
+F18. Storefront content has draft, preview, publish and rollback revisions. Product/order data remains relational; store-wide variables remain JSON. The settings page edits ordinary store variables through a simple form, validates/persists JSON revisions and confirms changes. Deployment/security flags remain server-controlled; reviewed bootstrap-file changes use the operator publishing command. CSV exports escape formula-leading cells and expire download links. Errors preserve form input.
 
 ## Dashboard metric definitions
 

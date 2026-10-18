@@ -29,3 +29,5 @@ To adapt for another owner: copy the example, set a unique store ID and brand, c
 ## Example limitations
 
 The example uses English and USD solely to match the reference's labels. All integration placeholders must be resolved before production. A zero shipping charge or zero tax entry must never be inferred from missing configuration. An explicit unconfigured state blocks checkout. JSON Schema checks structure; runtime checks validate cross-field relationships and external integration readiness.
+
+For practical editing instructions see the [guide beside the JSON folder](../config/README.md). `npm run config:apply` validates the reviewed file in read-only mode. Publishing requires `--apply --expected-revision` and an active `ADMIN_EMAIL`; it saves through the same validation, revision and audit service. Deployment/security changes require an application restart.

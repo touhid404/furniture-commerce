@@ -30,10 +30,12 @@ Prefer a single gateway origin with `/admin` and `/api/v1` paths. Separate origi
 
 ```text
 frontend/
-  src/{app,pages,features,components,lib,styles}
+  src/{app,pages,features,components,lib}
+  src/styles.css
   vite.config.ts
 backend/
-  src/{config,middleware,modules,services,integrations,jobs,db,generated}
+  src/{middleware,modules,services,db,generated}
+  src/{app,config,env,server,worker}.ts
   prisma/
     schema/
       schema.prisma
@@ -49,11 +51,11 @@ prisma.config.ts
 
 The root folders are named `frontend` and `backend` as requested. Storefront and admin routes share the frontend workspace; backend authorization protects `/api/v1/admin`. The generator and datasource declarations live in `backend/prisma/schema/schema.prisma`; each table has its own file under `models/`. Shared enums have a separate file. The Prisma CLI uses the complete schema directory through the root `prisma.config.ts`.
 
-See [implementation progress](13-implementation-progress.md) for the verified milestone and remaining screens. The diagram above includes future integrations: online payment is currently deferred, and COD is the only active payment method.
+See [implementation progress](13-implementation-progress.md) and release verification for the current implemented scope. The diagram above includes future integrations: online payment is currently deferred, and COD is the only active payment method.
 
 ## Frontend choices
 
-Propose Vite, React Router, TanStack Query and schema-based forms. Pin compatible stable versions during scaffolding. Route query state includes category and filters; server query keys include market and currency. Server data owns the bag; local state owns temporary form state and open panels. Use CSS tokens and accessible primitives while matching the reference layout. Default component-library styling must not replace the reference.
+The implementation uses Vite, React Router and existing form primitives. Shared resource hooks provide public caching and in-flight request deduplication; private account/admin responses are not shared across users. Route URL state preserves filters/pagination. Immediate local state and versioned browser storage own the guest bag; the backend owns authoritative prices, stock and checkout transactions. CSS tokens and accessible primitives preserve the reference composition.
 
 Provide explicit image aspect ratios, responsive image sizes and below-fold lazy loading. Add metadata, canonical URLs and a sitemap. Decide whether React pre-rendering or SSR is required before implementing catalog SEO. A static SPA alone is not an SEO acceptance result. React documents building from scratch with tools such as Vite in its [official setup guidance](https://react.dev/learn/build-a-react-app-from-scratch).
 
@@ -65,7 +67,7 @@ Only domain services change inventory or financial status. Do not expose a gener
 
 ## Background work
 
-Start with PostgreSQL jobs/outbox records and a supervised worker. Claim work atomically using row locks and leases; retry transient errors with bounded exponential backoff. Dead-letter exhausted jobs and surface them to operations. Jobs expire reservations, reconcile payments, retry refunds, send notifications and clean tokens. Recent dashboard orders use polling; no Redis or realtime service is needed merely to match the screenshot.
+Start with PostgreSQL jobs/outbox records and a supervised worker. Claim work atomically using row locks and leases; retry transient errors with bounded exponential backoff. Dead-letter exhausted jobs and surface them to operations. The current worker sends notifications, deletes unused storage objects and recovers/dead-letters expired leases. Payment reconciliation/reservation-expiry/refund jobs belong to the deferred online-payment extension. Recent dashboard orders use polling; no Redis or realtime service is needed merely to match the screenshot.
 
 Cache public content by configuration/content revision and invalidate on publication. Shared caches must never serve another customer's authenticated response. Object storage holds image files; PostgreSQL stores metadata and object keys.
 

@@ -2,7 +2,7 @@
 
 ## Repository and visibility
 
-Use the private repository `touhid404/furniture-commerce`. The initial `main` commit establishes secret and analysis-image exclusions. Documentation and the Neon application foundation are developed on `feat/documentation-and-neon-foundation` for review. Do not commit `.env.local`, `.env`, `.neon`, generated Prisma client, dependencies, video, extracted frames, crop images or render previews.
+Use the private repository `touhid404/furniture-commerce`. The initial `main` commit establishes secret and analysis-image exclusions. The historical foundation branch is `feat/documentation-and-neon-foundation`. Full implementation is maintained on `feat/commerce-platform` in PR 6, which supersedes the initial foundation draft. Do not commit `.env.local`, `.env`, `.neon`, generated Prisma client, dependencies, video, extracted frames, crop images or render previews.
 
 Only source, versioned JSON, API contracts, documentation, tests, workflow files and the text-only editable specification are shared. The original video and analysis images remain local by owner request. Keep secret scanning in local review even though the repository is private.
 
@@ -20,4 +20,4 @@ After the first workflow run, configure main-branch review and status requiremen
 
 ## Release discipline
 
-Merge only reviewed, validated work; prefer squash merges with meaningful commit subjects. Maintain changelog and release notes. Use a staged release branch or tagged main commit, reviewed migrations and a rollback plan. Run the release acceptance checklist before a production commerce release. The initial setup branch can remain open for owner review while implementation continues through later scoped PRs.
+Merge only reviewed, validated work. The completed implementation uses a protected PR merge to preserve the focused milestone commits. Maintain changelog and release notes. Use a staged release branch or tagged main commit, reviewed migrations and a rollback plan. Run the release acceptance checklist before a production commerce release. The initial setup branch can remain open for owner review while implementation continues through later scoped PRs.
