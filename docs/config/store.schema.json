@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/furniture-commerce/store.schema.json",
+  "title": "Store profile",
+  "description": "Structural validation; cross-field and production-readiness checks are also required.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "const": 1
+    },
+    "storeId": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "revision": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "mode": {
+      "type": "string",
+      "maxLength": 5000,
+      "enum": [
+        "development",
+        "demo",
+        "production"
+      ]
+    },
+    "brand": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "tagline": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "logoPath": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "supportEmail": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "name",
+        "tagline",
+        "logoPath",
+        "supportEmail"
+      ],
+      "additionalProperties": false
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "defaultLocale": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "locales": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+      },
+      "maxItems": 100
+    },
+    "defaultMarketId": {
+      "type": "string",
+      "maxLength": 5000
+    },
+    "currencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 5000,
+            "pattern": "^[A-Z]{3}$"
+          },
+          "minorUnitDigits": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "code",
+          "minorUnitDigits"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 100,
+      "minItems": 1
+    },
+    "markets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 5000,
+            "pattern": "^[A-Z]{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 5000,
+            "pattern": "^[A-Z]{3}$"
+          },
+          "locales": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 5000
+            },
+            "maxItems": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "country",
+          "currency",
+          "locales",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 100,
+      "minItems": 1
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "canvas": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "surface": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "ink": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "muted": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "sage": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "butter": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "blue": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "accent": {
+          "type": "string",
+          "maxLength": 5000,
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        }
+      },
+      "required": [
+        "canvas",
+        "surface",
+        "ink",
+        "muted",
+        "sage",
+        "butter",
+        "blue",
+        "accent"
+      ],
+      "additionalProperties": false
+    },
+    "navigation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "href": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "label",
+          "href"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 100
+    },
+    "home": {
+      "type": "object",
+      "properties": {
+        "eyebrow": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "headline": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "featuredSku": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "deliveryPromise": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "eyebrow",
+        "headline",
+        "featuredSku",
+        "deliveryPromise"
+      ],
+      "additionalProperties": false
+    },
+    "checkout": {
+      "type": "object",
+      "properties": {
+        "guestEnabled": {
+          "type": "boolean"
+        },
+        "maxQuantityPerSku": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "reservationMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "quoteMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "card": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 5000,
+              "enum": [
+                "unconfigured",
+                "stripe",
+                "adyen",
+                "sslcommerz",
+                "custom"
+              ]
+            }
+          },
+          "required": [
+            "enabled",
+            "provider"
+          ],
+          "additionalProperties": false
+        },
+        "cod": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "countryAllowlist": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "maxItems": 100
+            },
+            "maximumByCurrency": {
+              "type": "object",
+              "propertyNames": {
+                "pattern": "^[A-Z]{3}$"
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "countryAllowlist",
+            "maximumByCurrency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "guestEnabled",
+        "maxQuantityPerSku",
+        "reservationMinutes",
+        "quoteMinutes",
+        "card",
+        "cod"
+      ],
+      "additionalProperties": false
+    },
+    "shipping": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "type": "boolean"
+        },
+        "rates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "marketId": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "currency": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "feeMinor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "freeOverMinor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "estimatedDaysMin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "estimatedDaysMax": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "marketId",
+              "label",
+              "currency",
+              "feeMinor",
+              "freeOverMinor",
+              "estimatedDaysMin",
+              "estimatedDaysMax"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "configured",
+        "rates"
+      ],
+      "additionalProperties": false
+    },
+    "tax": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "maxLength": 5000,
+          "enum": [
+            "inclusive",
+            "exclusive"
+          ]
+        },
+        "shippingTaxable": {
+          "type": "boolean"
+        },
+        "rateBasisPoints": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "configured",
+        "mode",
+        "shippingTaxable",
+        "rateBasisPoints"
+      ],
+      "additionalProperties": false
+    },
+    "returns": {
+      "type": "object",
+      "properties": {
+        "windowDays": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "cancellationCutoff": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "windowDays",
+        "cancellationCutoff"
+      ],
+      "additionalProperties": false
+    },
+    "dashboard": {
+      "type": "object",
+      "properties": {
+        "pollSeconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 9007199254740991
+        },
+        "dailyGoalByCurrency": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z]{3}$"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "required": [
+        "pollSeconds",
+        "dailyGoalByCurrency"
+      ],
+      "additionalProperties": false
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "demoAdmin": {
+          "type": "boolean"
+        },
+        "simulateTraffic": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "demoAdmin",
+        "simulateTraffic"
+      ],
+      "additionalProperties": false
+    },
+    "messages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "setupTitle": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "setupDescription": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "databaseLabel": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "checking": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "checkAgain": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "connected": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "unavailable": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "pending": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "bag": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "readyNote": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "errorNote": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "setupTitle",
+          "setupDescription",
+          "databaseLabel",
+          "checking",
+          "checkAgain",
+          "connected",
+          "unavailable",
+          "pending",
+          "bag",
+          "readyNote",
+          "errorNote"
+        ],
+        "additionalProperties": false
+      },
+      "minProperties": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "storeId",
+    "revision",
+    "mode",
+    "brand",
+    "timezone",
+    "defaultLocale",
+    "locales",
+    "defaultMarketId",
+    "currencies",
+    "markets",
+    "theme",
+    "navigation",
+    "home",
+    "checkout",
+    "shipping",
+    "tax",
+    "returns",
+    "dashboard",
+    "features",
+    "messages"
+  ],
+  "additionalProperties": false
+}

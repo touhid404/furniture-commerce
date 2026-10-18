@@ -1,0 +1,1535 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Furniture Commerce critical flow contract",
+    "version": "0.1.0",
+    "description": "Design contract for the critical shopping flow, not a complete implementation. Only config and readiness operations are implemented in the current foundation. Full route inventory is in docs/06-api-specification.md."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/config": {
+      "get": {
+        "summary": "Read allowlisted store configuration",
+        "description": "Implemented by the foundation. Never returns backend credentials or private operational configuration.",
+        "operationId": "get_config",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PublicConfig"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Check API database readiness",
+        "description": "Implemented by the foundation. Executes a read-only PostgreSQL query via Prisma. Failure returns 503; response contains no credentials.",
+        "operationId": "get_health_ready",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Readiness"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/csrf": {
+      "get": {
+        "summary": "Create anonymous session and CSRF token",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "get_auth_csrf",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "csrfToken": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "csrfToken"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "List published products",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "get_products",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "nextCursor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 48
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "featured",
+                "price-asc",
+                "price-desc",
+                "newest"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/products/{slug}": {
+      "get": {
+        "summary": "Read published product details",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "get_products_slug",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "marketId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/cart": {
+      "get": {
+        "summary": "Read current session bag",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "get_cart",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/items": {
+      "post": {
+        "summary": "Add a SKU to the bag",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "post_cart_items",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "variantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 999
+                  }
+                },
+                "required": [
+                  "variantId",
+                  "quantity"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/items/{id}": {
+      "patch": {
+        "summary": "Set bag item quantity",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "patch_cart_items_id",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 999
+                  }
+                },
+                "required": [
+                  "quantity"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove bag item",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "delete_cart_items_id",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ]
+      }
+    },
+    "/checkout/quotes": {
+      "post": {
+        "summary": "Validate checkout and quote current bag",
+        "description": "Planned commerce contract; implemented capability is recorded in the setup report.",
+        "operationId": "post_checkout_quotes",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Quote"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "marketId": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "shippingAddress": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "shippingMethodId": {
+                    "type": "string"
+                  },
+                  "contactEmail": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "couponCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "marketId",
+                  "currency",
+                  "shippingAddress",
+                  "shippingMethodId",
+                  "contactEmail"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/orders": {
+      "post": {
+        "summary": "Submit a quote and begin payment",
+        "description": "Planned. Transaction rechecks quote and stock, snapshots order and writes outbox. Retry same scoped key and request fingerprint returns the original result; changed fingerprint returns 409. Card return URLs cannot confirm payment.",
+        "operationId": "post_checkout_orders",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderSubmission"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quoteId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "CARD",
+                      "COD"
+                    ]
+                  }
+                },
+                "required": [
+                  "quoteId",
+                  "paymentMethod"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-shop_session",
+        "description": "Opaque anonymous or account session. Not implemented in the connectivity foundation."
+      }
+    },
+    "schemas": {
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          }
+        },
+        "required": [
+          "amountMinor",
+          "currency"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "requestId"
+        ],
+        "additionalProperties": false
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "recipient": {
+            "type": "string"
+          },
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipient",
+          "line1",
+          "city",
+          "country"
+        ],
+        "additionalProperties": false
+      },
+      "Variant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "options",
+          "price",
+          "available"
+        ],
+        "additionalProperties": false
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Variant"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "categoryId",
+          "imageUrl",
+          "variants"
+        ],
+        "additionalProperties": false
+      },
+      "CartItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "unitPrice": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "lineTotal": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "id",
+          "variantId",
+          "name",
+          "quantity",
+          "unitPrice",
+          "lineTotal"
+        ],
+        "additionalProperties": false
+      },
+      "Cart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "marketId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItem"
+            }
+          },
+          "subtotal": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "marketId",
+          "currency",
+          "version",
+          "items",
+          "subtotal",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "Totals": {
+        "type": "object",
+        "properties": {
+          "subtotal": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "discount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "shipping": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "taxIncluded": {
+            "type": "boolean"
+          },
+          "grandTotal": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "subtotal",
+          "discount",
+          "shipping",
+          "tax",
+          "taxIncluded",
+          "grandTotal"
+        ],
+        "additionalProperties": false
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cartId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "configRevision": {
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/Totals"
+          },
+          "availablePaymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CARD",
+                "COD"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "cartId",
+          "expiresAt",
+          "configRevision",
+          "totals",
+          "availablePaymentMethods"
+        ],
+        "additionalProperties": false
+      },
+      "OrderSubmission": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PENDING",
+              "PAID"
+            ]
+          },
+          "nextAction": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "REDIRECT"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "type",
+              "url",
+              "expiresAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "paymentStatus"
+        ],
+        "additionalProperties": false
+      },
+      "Readiness": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "ready"
+          },
+          "database": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "connected"
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "latencyMs": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "status",
+              "checkedAt",
+              "latencyMs"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ],
+        "additionalProperties": false
+      },
+      "PublicConfig": {
+        "type": "object",
+        "properties": {
+          "storeId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "revision": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "brand": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "tagline": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "logoPath": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "supportEmail": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "name",
+              "tagline",
+              "logoPath",
+              "supportEmail"
+            ],
+            "additionalProperties": false
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "defaultLocale": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "locales": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+            },
+            "maxItems": 100
+          },
+          "defaultMarketId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "minorUnitDigits": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4
+                }
+              },
+              "required": [
+                "code",
+                "minorUnitDigits"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "markets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "country": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{2}$"
+                },
+                "currency": {
+                  "type": "string",
+                  "maxLength": 5000,
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "locales": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5000
+                  },
+                  "maxItems": 100
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "country",
+                "currency",
+                "locales",
+                "enabled"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "theme": {
+            "type": "object",
+            "properties": {
+              "canvas": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "surface": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "ink": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "muted": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "sage": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "butter": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "blue": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "accent": {
+                "type": "string",
+                "maxLength": 5000,
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            },
+            "required": [
+              "canvas",
+              "surface",
+              "ink",
+              "muted",
+              "sage",
+              "butter",
+              "blue",
+              "accent"
+            ],
+            "additionalProperties": false
+          },
+          "navigation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "href": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "home": {
+            "type": "object",
+            "properties": {
+              "eyebrow": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "headline": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "featuredSku": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "deliveryPromise": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "eyebrow",
+              "headline",
+              "featuredSku",
+              "deliveryPromise"
+            ],
+            "additionalProperties": false
+          },
+          "messages": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "setupTitle": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "setupDescription": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "databaseLabel": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "checking": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "checkAgain": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "connected": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "unavailable": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "pending": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "bag": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "readyNote": {
+                  "type": "string",
+                  "maxLength": 5000
+                },
+                "errorNote": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "setupTitle",
+                "setupDescription",
+                "databaseLabel",
+                "checking",
+                "checkAgain",
+                "connected",
+                "unavailable",
+                "pending",
+                "bag",
+                "readyNote",
+                "errorNote"
+              ],
+              "additionalProperties": false
+            },
+            "minProperties": 1
+          },
+          "capabilities": {
+            "type": "object",
+            "properties": {
+              "commerceReady": {
+                "type": "boolean"
+              },
+              "cardConfigured": {
+                "type": "boolean"
+              },
+              "shippingConfigured": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "commerceReady",
+              "cardConfigured",
+              "shippingConfigured"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "storeId",
+          "revision",
+          "brand",
+          "timezone",
+          "defaultLocale",
+          "locales",
+          "defaultMarketId",
+          "currencies",
+          "markets",
+          "theme",
+          "navigation",
+          "home",
+          "messages",
+          "capabilities"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
