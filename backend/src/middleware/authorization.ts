@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { storeConfig } from '../config.js';
-import { fail } from '../services/core.js';
+import { fail } from '../services/errors.js';
 
 export function requireUser(req: Request, _res: Response, next: NextFunction) {
   const session = req.shopSession;

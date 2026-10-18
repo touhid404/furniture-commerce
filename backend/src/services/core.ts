@@ -4,18 +4,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
 import type { Prisma } from '../generated/prisma/client.js';
 export const id = z.string().uuid();
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-export function fail(status: number, code: string, message: string): never {
-  throw new ApiError(status, code, message);
-}
+export { ApiError, fail } from './errors.js';
+import { fail } from './errors.js';
 export const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 export const json = (value: unknown): Prisma.InputJsonValue =>
   JSON.parse(JSON.stringify(value, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)));
