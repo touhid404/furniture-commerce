@@ -14,6 +14,7 @@ test-results/
 playwright-report/
 .neon
 backend/src/generated/
+backend/public/
 .DS_Store
 *.log
 __pycache__/

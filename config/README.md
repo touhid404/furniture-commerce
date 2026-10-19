@@ -1,6 +1,6 @@
 # Store configuration guide
 
-The active JSON profile is [`stores/default.json`](stores/default.json). Keep store-specific defaults here so the project can be reused for another owner. Keep passwords, database URLs, S3 keys, SMTP passwords and other secrets in the ignored root `.env.local` or the hosting secret manager.
+The local default JSON profile is [`stores/default.json`](stores/default.json). The [Render deployment profile](stores/production.json) sets production mode and disables demo access; its merchant details still need review before launch. `STORE_CONFIG_PATH` selects the profile at runtime. Keep store-specific defaults in JSON so the project can be reused for another owner. Keep passwords, database URLs, S3 keys, SMTP passwords and other secrets in the ignored root `.env.local` or the hosting secret manager.
 
 ## Everyday changes: use Admin → Settings
 

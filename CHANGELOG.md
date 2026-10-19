@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Kept the storefront's pill navbar visible as a floating sticky header while scrolling, with mobile spacing and a clear skip-link target.
+- Built the React application into ignored `backend/public/`, served it from Express in production, and added a Render web/worker Blueprint with a dedicated production JSON profile.
+
 - Added timestamped furniture storefront and admin design specification.
 - Added production commerce requirements, data design, API inventory and acceptance plan.
 - Added reusable JSON store profiles, schema validation and public configuration allowlist.

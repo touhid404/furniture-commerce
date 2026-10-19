@@ -4,6 +4,7 @@
 .neon
 node_modules
 dist
+backend/public
 test-results
 playwright-report
 *.mp4

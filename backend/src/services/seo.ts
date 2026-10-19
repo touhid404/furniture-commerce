@@ -36,7 +36,7 @@ export function robots(_req: Request, res: Response) {
 }
 export async function storefrontDocument(req: Request, res: Response) {
   const template = await readFile(
-    resolve(process.env.PROJECT_ROOT!, 'dist/storefront/index.html'),
+    resolve(process.env.PROJECT_ROOT!, 'backend/public/index.html'),
     'utf8',
   );
   let title = storeConfig.brand.name + ' — ' + storeConfig.brand.tagline,

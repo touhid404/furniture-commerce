@@ -47,7 +47,7 @@ An order atomically allocates stock. Dispatch decreases both physical stock and 
 
 ## Deployment
 
-The repository supplies a multi-stage Dockerfile. Build the `build` target for a separate reviewed migration job, then deploy the default runtime target behind HTTPS. Supply environment variables through the host secret manager. Run the API on port 3001 and set `PUBLIC_APP_URL` to the public HTTPS origin. Run a second instance/process using `node dist/server/backend/src/worker.js` for the worker. Neon hosts the database and objects, while the React/Express process requires an application host.
+The repository supplies a multi-stage Dockerfile and a [Render Blueprint](16-render-deployment.md). The frontend build is generated in `backend/public/` and copied into the Express runtime image. Render's web service binds to `PORT` (configured as 10000 in the Blueprint), serves both site and API on one HTTPS origin, and uses the separate continuously running worker service. Supply environment variables through Render's secret manager. Run reviewed migrations separately; startup never resets, seeds or changes schema. Neon continues to host the database and objects.
 
 Use `/api/v1/health/live` for process liveness and `/api/v1/health/ready` for database readiness. Product HTML includes server-rendered catalog content and metadata before React starts; `/robots.txt` excludes private areas and `/sitemap.xml` lists public content. Configure a CDN for static bundles and product images as traffic grows; do not cache authenticated API responses.
 

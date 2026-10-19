@@ -23,6 +23,7 @@ The storefront, customer workflows, admin screens and commerce backend are imple
 - [GitHub workflow](docs/11-github-workflow.md)
 - [Verified Neon setup report](docs/12-neon-setup-report.md)
 - [Release verification and measured performance](docs/15-release-verification.md)
+- [Render deployment of the combined frontend and backend](docs/16-render-deployment.md)
 
 ## Supporting artifacts
 
@@ -38,6 +39,7 @@ The storefront, customer workflows, admin screens and commerce backend are imple
 frontend/                     React application and Vite configuration
 backend/src/modules/          Express auth, catalog, commerce and admin routes
 backend/src/services/         Transactions, stock operations and calculations
+backend/public/               Generated React build, ignored by Git
 backend/prisma/schema/        Generator, datasource and shared enums
 backend/prisma/schema/models/ One Prisma schema file per table
 backend/prisma/migrations/    Reviewed SQL migration history
@@ -57,6 +59,8 @@ Run `npm run dev` and open [the development frontend](http://127.0.0.1:5173). Or
 Run `npm test`, `npm run build`, `npm run check:docs`, `npm run check:config` and `npm run prisma:validate`. `npm run test:db` checks the deliberately configured database. For browser acceptance: use `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e` with installed Chrome, or install Playwright Chromium. Commerce browser, API concurrency, storage and SMTP acceptance are part of the release checks.
 
 The active [JSON store profile](config/stores/default.json) uses explicitly labeled demo settings and sample US/USD data. Configure real merchant rules and production credentials before launch.
+
+For deployment, `npm run build` places the React site in `backend/public/`. Express serves that folder and the API on one origin. The [Render Blueprint and release steps](docs/16-render-deployment.md) define a web service plus a separate outbox worker; the [production profile](config/stores/production.json) disables demo mode but still needs real merchant details.
 
 ## Confirmed project choices
 
