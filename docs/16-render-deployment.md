@@ -42,7 +42,7 @@ For email, add `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSW
 
 ## Before real orders
 
-`config/stores/production.json` disables demo access, but still contains sample KVIST branding, `support@example.com`, illustrative products and US/USD rules. Set actual merchant identity, support email, price books, tax, shipping and policies. Replace the local-only `admin@ex.com` / `1234` account with a strong password using the controlled `npm run admin:create` command and enroll MFA. Production middleware rejects the weak testing account.
+`config/stores/production.json` disables demo access, but still contains sample KVIST branding, `support@example.com`, illustrative products and US/USD rules. Set actual merchant identity, support email, price books, tax, shipping and policies. Put `ADMIN_EMAIL=admin@ex.com`, `ADMIN_USERNAME=admin` and a unique strong `ADMIN_PASSWORD` in the ignored root `.env.local` (or in private Render environment variables for an explicit Render-shell provisioning run). Run `npm run admin:create` once with access to the production database, then enroll MFA. The command stores an Argon2 hash; the password is not needed by the web process after provisioning. Production middleware rejects the old weak testing account.
 
 After deployment, verify `/api/v1/health/live` and `/api/v1/health/ready` return 200, `/` and `/shop` load their `/assets/` files, `/api/v1/config` reports `demo: false`, a published product image resolves through `/media`, and a controlled sign-in/checkout works. Test the outbox with actual email delivery before promising notifications. If browser writes report an origin error, check that `PUBLIC_APP_URL` exactly matches the address in the browser.
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Documented environment-based administrator provisioning; the local secret stays in ignored `.env.local` and the database stores its hash.
 - Kept the storefront's pill navbar visible as a floating sticky header while scrolling, with mobile spacing and a clear skip-link target.
 - Built the React application into ignored `backend/public/`, served it from Express in production, and prepared a dedicated production JSON profile.
 - Documented a single Render Web Service setup, embedded the durable outbox worker, and added an optional 14-minute public health ping for the Free preview.

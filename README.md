@@ -76,7 +76,7 @@ Run `npm run dev` from the project root to start both Express (3001) and Vite (5
 
 The shopping bag updates synchronously in local storage, including quantities, subtotal and badge. Checkout redirects guests to sign-in and returns them with their bag intact. The backend rechecks prices and stock; changes require another review. Successful orders allocate stock atomically and use an idempotency key. Failed checkout preserves the local bag.
 
-The reset-created local testing account is username `admin`, password `1234`. It is blocked in production runtime until a strong password replaces it. Use `npm run admin:create` with `ADMIN_EMAIL=admin@ex.com`, `ADMIN_USERNAME=admin` and a securely supplied strong `ADMIN_PASSWORD` to replace it. Do not commit credentials.
+The reset-created local testing account is username `admin`, password `1234`. It is blocked in production runtime until a strong password replaces it. Put `ADMIN_EMAIL=admin@ex.com`, `ADMIN_USERNAME=admin` and a unique strong `ADMIN_PASSWORD` in the ignored root `.env.local`, then run `npm run admin:create` once to hash and save the credentials. Changing the environment file alone does not change an existing account, and login verifies the stored hash rather than reading the environment password. The password is not needed by the web process after provisioning. Never commit credentials.
 
 Page loaders use content skeletons. Product photos have bounded dimensions and 480px WebP card derivatives. Flying product animations last 1.05 seconds, respect reduced motion and never delay cart updates. Existing colors are preserved; spacing follows a 4px rhythm.
 
