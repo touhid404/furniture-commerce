@@ -1,53 +1,60 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startKeepalive } from '../backend/src/services/keepalive.js';
+import axios from 'axios';
+import cron from 'node-cron';
+import {
+  createKeepaliveTask,
+  keepaliveSchedule,
+  startKeepalive,
+} from '../backend/src/services/keepalive.js';
 
-test('optional keepalive checks the public health URL every 14 minutes and stops cleanly', async () => {
+test('production cron pings the configured HTTPS health URL every 14 minutes', async () => {
   const original = {
-    enabled: process.env.KEEPALIVE_ENABLED,
+    env: process.env.NODE_ENV,
     url: process.env.PUBLIC_APP_URL,
-    setInterval: globalThis.setInterval,
-    clearInterval: globalThis.clearInterval,
-    fetch: globalThis.fetch,
   };
-  let tick: (() => void) | undefined;
-  let interval: number | undefined;
-  let unrefCalled = false;
-  let cleared = false;
   let requestedUrl = '';
-  const timer = { unref: () => (unrefCalled = true) };
+  let timeout = 0;
+  let redirects = -1;
+  const info = console.info;
   try {
-    process.env.KEEPALIVE_ENABLED = 'true';
+    process.env.NODE_ENV = 'production';
     process.env.PUBLIC_APP_URL = 'https://store.example/shop';
-    globalThis.setInterval = ((callback: () => void, ms: number) => {
-      tick = callback;
-      interval = ms;
-      return timer;
-    }) as unknown as typeof setInterval;
-    globalThis.clearInterval = ((value: unknown) => {
-      cleared = value === timer;
-    }) as typeof clearInterval;
-    globalThis.fetch = (async (url: string | URL | Request) => {
-      requestedUrl = String(url);
-      return new Response(null, { status: 200 });
-    }) as typeof fetch;
+    console.info = () => undefined;
+    const request = (async (url: string, options: { timeout: number; maxRedirects: number }) => {
+      requestedUrl = url;
+      timeout = options.timeout;
+      redirects = options.maxRedirects;
+      return { status: 200 };
+    }) as typeof axios.get;
 
-    const stop = startKeepalive();
-    assert.equal(interval, 14 * 60 * 1000);
-    assert.equal(unrefCalled, true);
-    assert.equal(requestedUrl, '');
-    tick?.();
-    await Promise.resolve();
+    assert.equal(keepaliveSchedule, '*/14 * * * *');
+    assert.equal(cron.validate(keepaliveSchedule), true);
+    const task = createKeepaliveTask(request);
+    assert.ok(task);
+    assert.equal(task.getStatus(), 'stopped');
+    await task.execute();
     assert.equal(requestedUrl, 'https://store.example/api/v1/health/live');
-    stop();
-    assert.equal(cleared, true);
+    assert.equal(timeout, 10_000);
+    assert.equal(redirects, 0);
+    task.destroy();
   } finally {
-    globalThis.setInterval = original.setInterval;
-    globalThis.clearInterval = original.clearInterval;
-    globalThis.fetch = original.fetch;
-    if (original.enabled === undefined) delete process.env.KEEPALIVE_ENABLED;
-    else process.env.KEEPALIVE_ENABLED = original.enabled;
+    console.info = info;
+    if (original.env === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = original.env;
     if (original.url === undefined) delete process.env.PUBLIC_APP_URL;
     else process.env.PUBLIC_APP_URL = original.url;
+  }
+});
+
+test('cron job only runs in production', () => {
+  const original = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = 'development';
+    assert.equal(createKeepaliveTask(), undefined);
+    startKeepalive()();
+  } finally {
+    if (original === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = original;
   }
 });

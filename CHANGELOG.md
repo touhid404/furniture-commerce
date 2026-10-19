@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replaced the backend keepalive timer with `node-cron` and Axios, checking the configured public health URL every 14 minutes in production and logging the result; clarified the Render Free sleep limitation.
 - Renamed the storefront and admin brand to ELNAVO across store profiles, metadata and documentation; preserved existing sessions and local bags during the transition.
 - Seeded a missing administrator from private environment credentials while preserving the existing password on seed reruns; explicit `admin:create` remains the rotation command.
 - Kept the storefront's pill navbar visible as a floating sticky header while scrolling, with mobile spacing and a clear skip-link target.
