@@ -8,9 +8,15 @@ export function createKeepaliveTask(
 ): ScheduledTask | undefined {
   if (process.env.NODE_ENV !== 'production') return undefined;
 
-  const origin = new URL(process.env.PUBLIC_APP_URL ?? '');
-  if (origin.protocol !== 'https:')
-    throw new Error('Production keepalive requires an HTTPS PUBLIC_APP_URL');
+  const rawUrl = process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL;
+  let origin: URL;
+  try {
+    origin = new URL(rawUrl ?? '');
+    if (origin.protocol !== 'https:') throw new Error('HTTPS required');
+  } catch {
+    console.warn('[CRON] Skipping health check: no valid HTTPS app URL is configured');
+    return undefined;
+  }
   const url = new URL('/api/v1/health/live', origin).href;
 
   return cron.createTask(
