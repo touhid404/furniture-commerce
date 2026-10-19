@@ -47,7 +47,7 @@ An order atomically allocates stock. Dispatch decreases both physical stock and 
 
 ## Deployment
 
-The repository supplies a multi-stage Dockerfile and a [Render Blueprint](16-render-deployment.md). The frontend build is generated in `backend/public/` and copied into the Express runtime image. Render's web service binds to `PORT` (configured as 10000 in the Blueprint), serves both site and API on one HTTPS origin, and uses the separate continuously running worker service. Supply environment variables through Render's secret manager. Run reviewed migrations separately; startup never resets, seeds or changes schema. Neon continues to host the database and objects.
+The repository supplies a multi-stage Dockerfile and a [single Render Web Service guide](16-render-deployment.md). The frontend build is generated in `backend/public/` and copied into the Express runtime image. The web service binds to `PORT` (Docker default 10000), serves both site and API on one HTTPS origin, and can run the outbox worker in the same process with `RUN_WORKER_IN_WEB=true`. Supply environment variables through Render's secret manager. Run reviewed migrations separately; startup never resets, seeds or changes schema. Neon continues to host the database and objects. A Free Web Service can sleep, delaying worker jobs, and blocks common SMTP ports; the deployment guide records these limits.
 
 Use `/api/v1/health/live` for process liveness and `/api/v1/health/ready` for database readiness. Product HTML includes server-rendered catalog content and metadata before React starts; `/robots.txt` excludes private areas and `/sitemap.xml` lists public content. Configure a CDN for static bundles and product images as traffic grows; do not cache authenticated API responses.
 

@@ -60,7 +60,7 @@ Run `npm test`, `npm run build`, `npm run check:docs`, `npm run check:config` an
 
 The active [JSON store profile](config/stores/default.json) uses explicitly labeled demo settings and sample US/USD data. Configure real merchant rules and production credentials before launch.
 
-For deployment, `npm run build` places the React site in `backend/public/`. Express serves that folder and the API on one origin. The [Render Blueprint and release steps](docs/16-render-deployment.md) define a web service plus a separate outbox worker; the [production profile](config/stores/production.json) disables demo mode but still needs real merchant details.
+For deployment, `npm run build` places the React site in `backend/public/`. Express serves that folder and the API on one origin. The [single Render Web Service guide](docs/16-render-deployment.md) uses the root Dockerfile, with the outbox worker in the web process; the [production profile](config/stores/production.json) disables demo mode but still needs real merchant details.
 
 ## Confirmed project choices
 

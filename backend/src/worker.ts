@@ -1,16 +1,11 @@
 import { refreshStoreSettings } from './services/store-settings.js';
 import { createTransport } from 'nodemailer';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { prisma } from './db/client.js';
 import { storeConfig } from './config.js';
 import { deleteObject } from './services/storage.js';
-let stop = false;
-process.on('SIGTERM', () => {
-  stop = true;
-});
-process.on('SIGINT', () => {
-  stop = true;
-});
-async function run() {
+export async function runWorker(signal: AbortSignal) {
   if (!process.env.SMTP_HOST) {
     console.log('SMTP is not configured. Notifications remain durably queued.');
   }
@@ -22,7 +17,7 @@ async function run() {
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
       : undefined,
   });
-  while (!stop) {
+  while (!signal.aborted) {
     await refreshStoreSettings();
     await prisma.outboxJob.updateMany({
       where: { status: 'PROCESSING', attempts: { gte: 5 }, leaseUntil: { lt: new Date() } },
@@ -37,7 +32,15 @@ async function run() {
     >`UPDATE "OutboxJob" SET status='PROCESSING',"leaseUntil"=NOW()+INTERVAL '2 minutes',attempts=attempts+1 WHERE id=(SELECT id FROM "OutboxJob" WHERE (status='PENDING' OR (status='PROCESSING' AND "leaseUntil"<NOW())) AND "availableAt"<=NOW() AND attempts<5 AND (type='DELETE_MEDIA' OR ${!!process.env.SMTP_HOST}) ORDER BY "createdAt" FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING id`;
     if (!rows.length) {
       if (process.env.WORKER_ONCE === 'true') break;
-      await new Promise((r) => setTimeout(r, 3000));
+      await new Promise<void>((done) => {
+        const finish = () => {
+          clearTimeout(timer);
+          signal.removeEventListener('abort', finish);
+          done();
+        };
+        const timer = setTimeout(finish, 3000);
+        signal.addEventListener('abort', finish, { once: true });
+      });
       continue;
     }
     const j = await prisma.outboxJob.findUniqueOrThrow({
@@ -71,10 +74,17 @@ async function run() {
       });
     }
   }
-  await prisma.$disconnect();
 }
-void run().catch(async () => {
-  console.error('Worker failed');
-  await prisma.$disconnect();
-  process.exitCode = 1;
-});
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const controller = new AbortController();
+  process.on('SIGTERM', () => controller.abort());
+  process.on('SIGINT', () => controller.abort());
+  void runWorker(controller.signal)
+    .then(() => prisma.$disconnect())
+    .catch(async () => {
+      console.error('Worker failed');
+      await prisma.$disconnect();
+      process.exitCode = 1;
+    });
+}
