@@ -24,7 +24,7 @@ Proposed starting tokens are canvas `#F1F1E8`, surface `#FAFAF6`, ink `#1D2018`,
 
 ## Store header
 
-The pale header is a narrow rounded horizontal bar. At the left is a black circular emblem and the word KVIST. The centered links read Shop all, Seating, Lighting, Textiles, and Ceramics. At the right are an outline account icon and a near-black Bag pill with a bag icon and a small light count badge. Preserve the alignment and compact height. Brand label, logo and navigation labels come from JSON or the content catalog.
+The pale header is a narrow rounded horizontal bar. At the left is a black circular emblem and the word ELNAVO. The centered links read Shop all, Seating, Lighting, Textiles, and Ceramics. At the right are an outline account icon and a near-black Bag pill with a bag icon and a small light count badge. Preserve the alignment and compact height. Brand label, logo and navigation labels come from JSON or the content catalog.
 
 The bag badge is observed as zero on the opening screen and increases later in the clip. The user can add products without signing in. Do not infer the exact bag drawer layout from the thin partially visible panel near the sign-in frame. Header stickiness and menu hover behavior are unconfirmed and must be specified as implementation choices.
 
@@ -52,7 +52,7 @@ Replicate the form geometry and visual language while implementing server authen
 
 ## Admin overview V05
 
-The admin has its own shell. A pale fixed-width left sidebar occupies approximately 17 percent of the capture. KVIST and a small DEMO badge are at the top; Overview is the dark selected pill, followed by Orders, Products, Categories, and Storefront with small outline icons. A lower card shows Live traffic, Simulating shoppers, and a green toggle. The account block shows a circular blue avatar, Demo Admin, an email label and a logout icon.
+The admin has its own shell. A pale fixed-width left sidebar occupies approximately 17 percent of the capture. ELNAVO and a small DEMO badge are at the top; Overview is the dark selected pill, followed by Orders, Products, Categories, and Storefront with small outline icons. A lower card shows Live traffic, Simulating shoppers, and a green toggle. The account block shows a circular blue avatar, Demo Admin, an email label and a logout icon.
 
 The main area begins with a small date and “Good afternoon, Demo.” At the right are Last order just now and a segmented 7D, 30D, 90D selector, with 30D selected. Below is a row of four cards: Revenue `$164,375`, Orders `497`, Avg. order value `$330.73`, and Customers `344`. Each includes an icon, percentage change pill and small sparkline. These values are demo content; production values come from documented metric definitions.
 

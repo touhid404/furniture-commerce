@@ -1,5 +1,6 @@
 import type { Cart, CartItem, Product, Variant } from './types.js';
-export const CART_KEY = 'kvist.cart.v1';
+export const CART_KEY = 'elnavo.cart.v1';
+export const LEGACY_CART_KEY = 'kvist.cart.v1';
 export const emptyCart = (marketId: string, currency: string): Cart => ({
   id: 'local',
   version: 1,

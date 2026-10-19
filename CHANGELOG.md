@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Renamed the storefront and admin brand to ELNAVO across store profiles, metadata and documentation; preserved existing sessions and local bags during the transition.
 - Seeded a missing administrator from private environment credentials while preserving the existing password on seed reruns; explicit `admin:create` remains the rotation command.
 - Kept the storefront's pill navbar visible as a floating sticky header while scrolling, with mobile spacing and a clear skip-link target.
 - Built the React application into ignored `backend/public/`, served it from Express in production, and prepared a dedicated production JSON profile.

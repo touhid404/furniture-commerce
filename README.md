@@ -1,4 +1,4 @@
-# Furniture commerce platform
+# ELNAVO commerce platform
 
 React frontend, Express backend, PostgreSQL on Neon, and Prisma. The storefront, customer and admin applications share a reviewed commerce API. See the release verification report for measured results and deployment prerequisites.
 

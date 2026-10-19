@@ -13,6 +13,7 @@ import { resource } from '../lib/resource-cache.js';
 import {
   addItem,
   CART_KEY,
+  LEGACY_CART_KEY,
   changeQuantity,
   emptyCart,
   parseCart,
@@ -67,6 +68,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setCart(value);
     try {
       localStorage.setItem(CART_KEY, JSON.stringify(value));
+      localStorage.removeItem(LEGACY_CART_KEY);
     } catch {
       setToast('Your bag is available in this tab. Browser storage is unavailable.');
     }
@@ -87,7 +89,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         let market = c.data.markets.find((m) => m.id === c.data.defaultMarketId)!;
         let stored: string | null = null;
         try {
-          stored = localStorage.getItem(CART_KEY);
+          stored = localStorage.getItem(CART_KEY) ?? localStorage.getItem(LEGACY_CART_KEY);
         } catch {
           /* Storage is optional. */
         }
@@ -101,6 +103,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           /* Malformed storage uses the configured default. */
         }
         const bag = parseCart(stored, emptyCart(market.id, market.currency));
+        try {
+          if (stored && !localStorage.getItem(CART_KEY)) {
+            localStorage.setItem(CART_KEY, JSON.stringify(bag));
+            localStorage.removeItem(LEGACY_CART_KEY);
+          }
+        } catch {
+          /* The bag remains available for this tab when storage is unavailable. */
+        }
         cartRef.current = bag;
         setCart(bag);
         setConfig(c.data);
@@ -128,7 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     for (const [key, value] of Object.entries(config.theme))
       document.documentElement.style.setProperty(`--${key}`, value);
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== CART_KEY || !cartRef.current) return;
+      if (![CART_KEY, LEGACY_CART_KEY].includes(event.key ?? '') || !cartRef.current) return;
       const bag = parseCart(
         event.newValue,
         emptyCart(cartRef.current.marketId, cartRef.current.currency),
