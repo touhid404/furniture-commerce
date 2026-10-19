@@ -34,7 +34,7 @@ const tables = [
 ];
 try {
   assertResetAllowed(process.argv.slice(2), process.env, storeConfig.mode);
-  const passwordHash = await hash('1234');
+  const passwordHash = await hash(z.string().min(10).max(128).parse(process.env.ADMIN_PASSWORD));
   await prisma.$queryRaw`SELECT 1::int`;
   await prisma.$transaction(
     async (tx) => {
@@ -43,12 +43,12 @@ try {
       await tx.$executeRawUnsafe('TRUNCATE TABLE ' + tables.map((t) => `"${t}"`).join(', '));
       await tx.user.create({
         data: {
-          email: z.email().parse(process.env.ADMIN_EMAIL ?? 'admin@ex.com'),
-          username: 'admin',
-          name: 'Store admin',
+          email: z.email().parse(process.env.ADMIN_EMAIL),
+          username: process.env.ADMIN_USERNAME ?? 'admin',
+          name: process.env.ADMIN_NAME ?? 'Store admin',
           passwordHash,
           role: 'ADMIN',
-          requiresPasswordChange: true,
+          requiresPasswordChange: false,
           emailVerifiedAt: new Date(),
         },
       });
@@ -56,7 +56,7 @@ try {
     { maxWait: 30_000, timeout: 60_000 },
   );
   console.log(
-    `PASS reset ${process.env.NEON_BRANCH}: 25 application tables cleared; schema and migrations preserved. Local testing admin created; replace its password before production runtime.`,
+    `PASS reset ${process.env.NEON_BRANCH}: 25 application tables cleared; schema and migrations preserved. Admin created from environment credentials.`,
   );
 } finally {
   await prisma.$disconnect();

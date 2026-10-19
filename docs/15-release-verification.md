@@ -20,7 +20,7 @@ The owner explicitly approved the one-time production application-data reset. It
 
 The local testing administrator is `admin@ex.com`, username `admin`, password `1234`, role ADMIN. The password is Argon2-hashed and the account requires replacement before production runtime. Both production login and admin authorization reject the flagged weak account. Use the controlled `admin:create` command with a strong password before a real launch. Public demo sign-in is disabled in the active local environment.
 
-`backend/prisma/seeds/products.json` defines 16 realistic sample products, five categories, explicit USD price books, 30 opening units per SKU, sample policies and the demonstration promotion. The seed uses the same product validation/image processing as admin uploads. Its rerun reported `0 created, 16 unchanged`; existing administrator edits, current stock and orders are preserved. It creates no users or fabricated historical orders. The illustrative photographs and descriptions must be replaced with approved merchant product information before selling.
+`backend/prisma/seeds/products.json` defines 16 realistic sample products, five categories, explicit USD price books, 30 opening units per SKU, sample policies and the demonstration promotion. The seed uses the same product validation/image processing as admin uploads. Its prior rerun reported `0 created, 16 unchanged`; existing administrator edits, current stock and orders are preserved. The seed now creates the environment-configured administrator if missing and never invents historical orders. The illustrative photographs and descriptions must be replaced with approved merchant product information before selling.
 
 ## Image storage
 

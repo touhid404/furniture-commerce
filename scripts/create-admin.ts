@@ -2,7 +2,7 @@ import { hash } from '@node-rs/argon2';
 import { prisma } from '../backend/src/db/client.js';
 import { z } from 'zod';
 const address = z.email().parse(process.env.ADMIN_EMAIL).toLowerCase();
-const password = z.string().min(12).parse(process.env.ADMIN_PASSWORD);
+const password = z.string().min(10).max(128).parse(process.env.ADMIN_PASSWORD);
 try {
   await prisma.user.upsert({
     where: { email: address },

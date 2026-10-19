@@ -8,6 +8,7 @@ import { storeConfig } from '../../src/config.js';
 import { productInput } from '../../src/services/products.js';
 import { createImageAsset, prepareImage } from '../../src/services/images.js';
 import { atomic } from '../../src/services/core.js';
+import { seedAdmin } from './admin.js';
 
 const manifestSchema = z.object({
   notice: z.string(),
@@ -113,6 +114,7 @@ try {
       `PASS ${manifest.products.length} validated products and ${images.size} real photographs prepared; database unchanged.`,
     );
   } else {
+    const adminStatus = await seedAdmin();
     let created = 0,
       skipped = 0;
     for (const category of manifest.categories)
@@ -195,7 +197,7 @@ try {
         update: {},
       });
     console.log(
-      `PASS seed: ${created} created, ${skipped} unchanged; no users, orders or traffic invented. Branch: ${process.env.NEON_BRANCH}.`,
+      `PASS seed: admin ${adminStatus}; ${created} products created, ${skipped} unchanged; no orders or traffic invented. Branch: ${process.env.NEON_BRANCH}.`,
     );
   }
 } finally {
