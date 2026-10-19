@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Simplified the production keepalive to a direct `node-cron`/Axios ping configured from the app URL environment, with a missing-URL guard.
 - Use Render's automatic HTTPS service URL when no custom public URL is configured, and skip misconfigured keepalive checks without crashing the web server.
 - Replaced the backend keepalive timer with `node-cron` and Axios, checking the configured public health URL every 14 minutes in production and logging the result; clarified the Render Free sleep limitation.
 - Renamed the storefront and admin brand to ELNAVO across store profiles, metadata and documentation; preserved existing sessions and local bags during the transition.
