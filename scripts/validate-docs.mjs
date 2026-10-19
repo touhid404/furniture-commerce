@@ -20,7 +20,11 @@ for (const path of docs) {
 }
 const schema = JSON.parse(readFileSync('docs/config/store.schema.json', 'utf8'));
 const validate = new Ajv2020({ allErrors: true }).compile(schema);
-for (const path of ['config/stores/default.json', 'docs/config/store.example.json']) {
+const profiles = [
+  ...files(resolve('config/stores')).filter((p) => p.endsWith('.json')),
+  resolve('docs/config/store.example.json'),
+];
+for (const path of profiles) {
   const value = JSON.parse(readFileSync(path, 'utf8'));
   assert.ok(validate(value), `${path}: ${JSON.stringify(validate.errors)}`);
 }
@@ -50,6 +54,6 @@ for (const [path, item] of Object.entries(api.paths)) {
 assert.equal(new Set(operationIds).size, operationIds.length, 'Operation IDs must be unique');
 assert.ok(existsSync('docs/deliverables/Furniture-Commerce-Specification.docx'), 'Editable specification missing');
 console.log(`PASS ${docs.length} Markdown documents and ${checkedLinks} local links`);
-console.log('PASS both JSON profiles against draft 2020-12 schema');
+console.log(`PASS ${profiles.length} JSON profiles against draft 2020-12 schema`);
 console.log(`PASS ${operationIds.length} OpenAPI operations and ${refs} local schema references`);
 console.log('PASS editable specification exists');

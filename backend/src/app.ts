@@ -85,7 +85,7 @@ app.use('/api', (_req, res) =>
 if (process.env.NODE_ENV === 'production') {
   app.get('/robots.txt', robots);
   app.get('/sitemap.xml', sitemap);
-  app.use(express.static(resolve(process.env.PROJECT_ROOT!, 'dist/storefront'), { index: false }));
+  app.use(express.static(resolve(process.env.PROJECT_ROOT!, 'backend/public'), { index: false }));
   app.get('/{*path}', storefrontDocument);
 }
 const errorHandler: ErrorRequestHandler = (e, _req, res, _next) => {
