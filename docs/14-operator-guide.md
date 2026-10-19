@@ -24,11 +24,11 @@ For email, set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSW
 
 ## Demo and real-store configuration
 
-The default profile is an explicitly labeled sample store. `npm run seed` reads the dedicated backend seed manifest, stores real illustrative photographs in Neon and creates missing products, prices and opening stock. It preserves existing product edits and stock on reruns and creates no users or historical orders. The separately confirmed reset command is never part of normal seeding. Production branch naming does not change a demo profile into a real merchant launch.
+The default profile is an explicitly labeled sample store. `npm run seed` reads the dedicated backend seed manifest, creates a missing administrator from private `ADMIN_EMAIL` and `ADMIN_PASSWORD`, stores real illustrative photographs in Neon and creates missing products, prices and opening stock. It preserves an existing admin password, product edits and stock on reruns and creates no historical orders. The separately confirmed reset command is never part of normal seeding. Production branch naming does not change a demo profile into a real merchant launch.
 
 For a real store, create a reviewed JSON profile with `mode: production`, disable `features.demoAdmin` and `features.simulateTraffic`, set actual country/currency/locale, explicit price books, supported shipping rates, COD caps, tax rules, policies and brand details. Keep personal and country-specific variables in JSON. Never place access keys in that profile. Run `npm run check:config` before deployment.
 
-Create a real administrator using the controlled `npm run admin:create` command with `ADMIN_EMAIL` and `ADMIN_PASSWORD` supplied securely in the process environment. Public registration always creates a customer. Sign in and enroll an authenticator at `/account/security`; production admin operations require a session that has passed MFA. Keep the encryption key stable across deployments and store it in the hosting secret manager. Lost authenticators require an authenticated operator recovery procedure; do not add a public bypass.
+Keep `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the ignored `.env.local`; `npm run seed` creates the admin only if absent, while `npm run admin:create` explicitly rotates an existing password. Public registration always creates a customer. Sign in and enroll an authenticator at `/account/security`; production admin operations require a session that has passed MFA. Keep the encryption key stable across deployments and store it in the hosting secret manager. Lost authenticators require an authenticated operator recovery procedure; do not add a public bypass.
 
 ## Everyday administration
 

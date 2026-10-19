@@ -52,7 +52,7 @@ tests/                       Unit and browser checks
 
 Use Node 24 and run `npm ci`. Keep `.env*` credentials and `.neon` ignored. Fixture verification uses a short-lived isolated `test-*` Neon branch; its credentials are injected into test processes without changing `.env.local`. The finished app uses one ignored `.env.local`. Deployment-injected environment values take priority over files. Keep a single local file; the loader does not read alternate `.env` files.
 
-The owner selected the Neon `production` branch for the app. Its database and `assets` credentials belong together in `.env.local`. Use [the environment template](docs/config/backend.env.example) for variable names. Run `npm run db:deploy` for reviewed forward migrations only. Run `npm run seed` for the idempotent product catalog defined in [the seed folder](backend/prisma/seeds/README.md); it creates no historical orders and never resets the database. The owner will delete the old development branch personally.
+The owner selected the Neon `production` branch for the app. Its database and `assets` credentials belong together in `.env.local`. Use [the environment template](docs/config/backend.env.example) for variable names. Run `npm run db:deploy` for reviewed forward migrations only. Run `npm run seed` for the idempotent product catalog and environment-configured administrator defined in [the seed folder](backend/prisma/seeds/README.md); it creates no historical orders and never resets the database. The owner will delete the old development branch personally.
 
 Run `npm run dev` and open [the development frontend](http://127.0.0.1:5173). Or run `npm run build` followed by `npm start` and open [the compiled application](http://127.0.0.1:3001). The API is under `/api/v1`. `npm run worker` starts the separate email outbox worker; SMTP credentials are needed for delivery.
 
@@ -76,7 +76,7 @@ Run `npm run dev` from the project root to start both Express (3001) and Vite (5
 
 The shopping bag updates synchronously in local storage, including quantities, subtotal and badge. Checkout redirects guests to sign-in and returns them with their bag intact. The backend rechecks prices and stock; changes require another review. Successful orders allocate stock atomically and use an idempotency key. Failed checkout preserves the local bag.
 
-The reset-created local testing account is username `admin`, password `1234`. It is blocked in production runtime until a strong password replaces it. Use `npm run admin:create` with `ADMIN_EMAIL=admin@ex.com`, `ADMIN_USERNAME=admin` and a securely supplied strong `ADMIN_PASSWORD` to replace it. Do not commit credentials.
+The original reset-created local testing account used username `admin`, password `1234`; production rejected it. Put `ADMIN_EMAIL=admin@ex.com`, `ADMIN_USERNAME=admin` and the owner-selected `ADMIN_PASSWORD` in the ignored root `.env.local`. `npm run seed` creates a missing administrator without changing an existing password; `npm run admin:create` explicitly creates or rotates it. Both commands store an Argon2 hash. Changing the environment file alone does not change an existing account, and login verifies the stored hash rather than reading the environment password. Never commit credentials.
 
 Page loaders use content skeletons. Product photos have bounded dimensions and 480px WebP card derivatives. Flying product animations last 1.05 seconds, respect reduced motion and never delay cart updates. Existing colors are preserved; spacing follows a 4px rhythm.
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Seeded a missing administrator from private environment credentials while preserving the existing password on seed reruns; explicit `admin:create` remains the rotation command.
 - Kept the storefront's pill navbar visible as a floating sticky header while scrolling, with mobile spacing and a clear skip-link target.
 - Built the React application into ignored `backend/public/`, served it from Express in production, and prepared a dedicated production JSON profile.
 - Documented a single Render Web Service setup, embedded the durable outbox worker, and added an optional 14-minute public health ping for the Free preview.
