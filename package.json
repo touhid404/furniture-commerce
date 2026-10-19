@@ -39,7 +39,7 @@
     "start": "NODE_ENV=production node dist/server/backend/src/server.js",
     "check:docs": "node scripts/validate-docs.mjs",
     "check:config": "tsx scripts/check-config.ts",
-    "test": "tsx --test tests/config.test.ts tests/domain.test.ts",
+    "test": "tsx --test tests/config.test.ts tests/domain.test.ts tests/keepalive.test.ts",
     "test:db": "tsx scripts/verify-database.ts",
     "test:e2e": "playwright test",
     "db:deploy": "prisma migrate deploy",
