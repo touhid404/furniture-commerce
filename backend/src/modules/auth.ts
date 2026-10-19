@@ -17,7 +17,9 @@ declare global {
     }
   }
 }
-const cookieName = storeConfig.mode === 'production' ? '__Host-kvist_session' : 'kvist_session';
+const cookieName = storeConfig.mode === 'production' ? '__Host-elnavo_session' : 'elnavo_session';
+const legacyCookieName =
+  storeConfig.mode === 'production' ? '__Host-kvist_session' : 'kvist_session';
 const random = () => randomBytes(32).toString('hex');
 export const safeUser = (u: User) => ({
   id: u.id,
@@ -36,7 +38,7 @@ export async function sessionMiddleware(req: Request, _res: Response, next: Next
     )
   )
     return next();
-  const token = req.cookies?.[cookieName];
+  const token = req.cookies?.[cookieName] ?? req.cookies?.[legacyCookieName];
   if (typeof token === 'string' && token.length === 64) {
     const s = await prisma.session.findUnique({
       where: { tokenHash: digest(token) },
@@ -69,6 +71,11 @@ export async function createSession(
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 86400000,
+  });
+  res.clearCookie(legacyCookieName, {
+    path: '/',
+    secure: storeConfig.mode === 'production',
+    sameSite: 'lax',
   });
   req.shopSession = s;
   return s;
@@ -231,7 +238,7 @@ auth.post('/demo', authLimit, async (req, res) => {
   )
     fail(404, 'NOT_FOUND', 'Demo sign in is unavailable.');
   const u = await prisma.user.findUnique({
-    where: { email: 'demo@kvist.example' },
+    where: { email: 'demo@elnavo.example' },
   });
   if (!u) fail(503, 'DEMO_UNAVAILABLE', 'Demo data has not been initialized.');
   await finishLogin(req, res, u);
@@ -242,7 +249,12 @@ auth.post('/logout', async (req, res) => {
       where: { id: req.shopSession.id },
       data: { expiresAt: new Date() },
     });
-  res.clearCookie(cookieName, { path: '/' });
+  for (const name of [cookieName, legacyCookieName])
+    res.clearCookie(name, {
+      path: '/',
+      secure: storeConfig.mode === 'production',
+      sameSite: 'lax',
+    });
   res.json({ data: { ok: true } });
 });
 async function issueUserToken(user: User, purpose: string) {

@@ -20,14 +20,14 @@
     "typescript": "7.0.2",
     "vite": "8.3.4"
   },
-  "name": "furniture-commerce",
+  "name": "elnavo-commerce",
   "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24 <25"
   },
-  "description": "Reference-driven furniture commerce platform with React, Express, Prisma and Neon",
+  "description": "ELNAVO furniture commerce platform with React, Express, Prisma and Neon",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "tsx watch --exclude './backend/src/generated/**' backend/src/server.ts",

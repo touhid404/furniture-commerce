@@ -5,9 +5,9 @@ import { assertFixtureEnvironment } from '../tests/fixtures/environment.js';
 assertFixtureEnvironment();
 try {
   await prisma.user.upsert({
-    where: { email: 'demo@kvist.example' },
+    where: { email: 'demo@elnavo.example' },
     create: {
-      email: 'demo@kvist.example',
+      email: 'demo@elnavo.example',
       name: 'Demo Admin',
       passwordHash: await hash(randomBytes(32).toString('hex')),
       role: 'ADMIN',

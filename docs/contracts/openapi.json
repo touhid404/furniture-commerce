@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Furniture Commerce API",
+    "title": "ELNAVO Commerce API",
     "version": "1.0.0",
     "description": "Implemented React/Express commerce API. COD is the only active payment method; SSLCommerz is deferred. Mutations require an opaque session cookie and X-CSRF-Token. Start with GET /auth/csrf. Admin operations require ADMIN and MFA in production. Money is serialized as integer minor-unit strings. Listing requests default to 12 products and return pagination metadata. Guest carts are local; syncing, quoting and ordering require authentication."
   },
@@ -5915,8 +5915,8 @@
       "SessionCookie": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "kvist_session",
-        "description": "Demo/development cookie. Production uses Secure HttpOnly __Host-kvist_session."
+        "name": "elnavo_session",
+        "description": "Demo/development cookie. Production uses Secure HttpOnly __Host-elnavo_session; prior session cookies remain readable during the rebrand."
       }
     },
     "schemas": {

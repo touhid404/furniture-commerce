@@ -362,7 +362,7 @@ test('admin sign-in redirects, protected pages and cancellable settings/logout',
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.locator('.admin-brand .demo-label')).toHaveCount(0);
   await page.goto('/admin/settings');
-  await expect(page.getByLabel('Store name', { exact: true })).toHaveValue('KVIST');
+  await expect(page.getByLabel('Store name', { exact: true })).toHaveValue('ELNAVO');
   await expect(page.getByText('mode', { exact: true })).toHaveCount(0);
   await page.removeLocatorHandler(page.getByRole('alertdialog'));
   let saves = 0;
@@ -375,7 +375,7 @@ test('admin sign-in redirects, protected pages and cancellable settings/logout',
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   expect(saves).toBe(0);
   await page.reload();
-  await expect(page.getByLabel('Store name', { exact: true })).toHaveValue('KVIST');
+  await expect(page.getByLabel('Store name', { exact: true })).toHaveValue('ELNAVO');
   const tagline = page.getByLabel('Tagline', { exact: true }),
     original = await tagline.inputValue();
   await tagline.fill('Considered furniture, saved from admin');
